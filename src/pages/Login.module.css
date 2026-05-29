@@ -1,0 +1,132 @@
+.page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #EEEDFE 0%, #F8F7FF 50%, #E1F5EE 100%);
+  padding: 1rem;
+}
+
+.card {
+  background: #fff;
+  border-radius: 20px;
+  padding: 2.5rem 2rem;
+  width: 100%;
+  max-width: 400px;
+  box-shadow: 0 4px 40px rgba(83,74,183,0.12), 0 1px 4px rgba(83,74,183,0.06);
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+.logo i {
+  font-size: 28px;
+  color: var(--purple);
+}
+.logo span {
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--text);
+  letter-spacing: -0.3px;
+}
+
+.tagline {
+  font-size: 14px;
+  color: var(--text2);
+  margin-bottom: 1.75rem;
+  line-height: 1.5;
+}
+
+.googleBtn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 11px 16px;
+  border: 1px solid var(--border-mid);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text);
+  cursor: pointer;
+  transition: background 0.15s, box-shadow 0.15s;
+}
+.googleBtn:hover:not(:disabled) {
+  background: var(--surface2);
+  box-shadow: 0 1px 4px rgba(83,74,183,0.1);
+}
+.googleBtn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 1.25rem 0;
+  color: var(--text3);
+  font-size: 12px;
+}
+.divider::before, .divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.submitBtn {
+  width: 100%;
+  padding: 11px;
+  background: var(--purple);
+  color: #fff;
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: opacity 0.15s;
+  margin-top: 2px;
+}
+.submitBtn:hover:not(:disabled) { opacity: 0.9; }
+.submitBtn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.error {
+  font-size: 13px;
+  color: #993C1D;
+  background: #FAECE7;
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+}
+.info {
+  font-size: 13px;
+  color: #0F6E56;
+  background: var(--teal-light);
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+}
+
+.links {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 1.25rem;
+}
+.links button {
+  font-size: 13px;
+  color: var(--purple);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+}
+.links button:hover { text-decoration: underline; }
+.links span { color: var(--text3); }
