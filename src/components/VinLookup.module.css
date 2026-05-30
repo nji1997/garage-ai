@@ -14,12 +14,21 @@
   font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 0.06em;
+  transition: color 0.15s;
 }
 .divider::before, .divider::after {
   content: '';
   flex: 1;
   height: 1px;
   background: var(--border);
+}
+.dividerFallback { color: var(--amber); }
+.dividerFallback span { font-weight: 600; }
+.dividerFallback::before, .dividerFallback::after { background: var(--amber-light); }
+
+.inputRowHighlight input {
+  border-color: var(--purple);
+  box-shadow: 0 0 0 3px rgba(83,74,183,0.12);
 }
 
 .inputRow {

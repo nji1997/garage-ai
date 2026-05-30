@@ -5,7 +5,9 @@ import { Btn, Card, Badge, Spinner, EmptyState, SectionHeader } from '../compone
 import VinLookup from '../components/VinLookup'
 import styles from './Dashboard.module.css'
 import { callClaude, callClaudeWithFile } from '../lib/claude'
+import { compressImage } from '../lib/image'
 import MobileBar from '../components/MobileBar'
+import VehicleSilhouette from '../components/VehicleSilhouette'
 
 const TABS = ['Overview', 'Service History', 'Reminders', 'Modifications', 'AI Advisor', 'Scan Receipt', 'Sell Vehicle']
 
@@ -86,6 +88,7 @@ export default function Dashboard() {
                 <h1 className={styles.vehicleName}>{vehicle.year} {vehicle.make} {vehicle.model} {vehicle.trim}</h1>
                 <p className={styles.vehicleSub}>{vehicle.engine} · {vehicle.transmission} · {(vehicle.mileage || 0).toLocaleString()} mi</p>
               </div>
+              <VehicleSilhouette bodyClass={vehicle.bodyClass} className={styles.headerSilhouette} />
               <Btn variant="danger" size="sm" onClick={() => { if (confirm('Remove this vehicle?')) deleteVehicle(vehicle.id) }}>
                 <i className="ti ti-trash" /> Remove
               </Btn>
@@ -119,10 +122,12 @@ function VehicleListItem({ vehicle, selected, onClick }) {
   const records = vehicle.records || []
   const reminders = vehicle.reminders || []
   const urgent = reminders.filter(r => r.priority === 'high').length
-  const total = records.reduce((s, r) => s + (r.cost || 0), 0)
   return (
     <div className={`${styles.vehicleItem} ${selected ? styles.vehicleItemSelected : ''}`} onClick={onClick}>
-      <div className={styles.vehicleItemName}>{vehicle.year} {vehicle.make} {vehicle.model}</div>
+      <div className={styles.vehicleItemTop}>
+        <div className={styles.vehicleItemName}>{vehicle.year} {vehicle.make} {vehicle.model}</div>
+        <VehicleSilhouette bodyClass={vehicle.bodyClass} className={styles.itemSilhouette} />
+      </div>
       <div className={styles.vehicleItemMeta}>
         <span><i className="ti ti-road" /> {(vehicle.mileage || 0).toLocaleString()} mi</span>
         <span><i className="ti ti-tool" /> {records.length}</span>
@@ -222,16 +227,46 @@ function OverviewTab({ vehicle, updateVehicle }) {
 }
 
 /* ── SERVICE HISTORY TAB ──────────────────────────────────── */
+const BLANK_FORM = { service: '', shop: '', date: '', mileage: '', cost: '', notes: '', verified: false }
+
 function ServiceHistoryTab({ vehicle, updateVehicle }) {
   const records = [...(vehicle.records || [])].sort((a, b) => new Date(b.date) - new Date(a.date))
   const [showForm, setShowForm] = useState(false)
-  const [form, setForm] = useState({ service: '', shop: '', date: '', mileage: '', cost: '', notes: '', verified: false })
+  const [form, setForm] = useState(BLANK_FORM)
+  const [scanLoading, setScanLoading] = useState(false)
+  const [scanError, setScanError] = useState('')
+  const photoRef = useRef(null)
+
+  async function scanReceipt(file) {
+    if (!file) return
+    setScanLoading(true); setScanError('')
+    try {
+      const base64 = await compressImage(file)
+      const reply = await callClaudeWithFile(RECEIPT_SYSTEM, 'Extract all service data from this receipt.', base64, 'image/jpeg')
+      const data = JSON.parse(reply.replace(/```json|```/g, '').trim())
+      setForm({
+        service: data.service || '',
+        shop: data.shop || '',
+        date: data.date || '',
+        mileage: data.mileage ? String(data.mileage) : '',
+        cost: data.total ? String(data.total) : '',
+        notes: data.notes || '',
+        verified: false,
+      })
+      setShowForm(true)
+    } catch (err) {
+      setScanError('Could not read receipt — fill in the details below.')
+      setForm(BLANK_FORM)
+      setShowForm(true)
+    }
+    setScanLoading(false)
+  }
 
   function save() {
     const rec = { ...form, id: 'r' + Date.now(), cost: parseFloat(form.cost) || 0, mileage: parseInt(form.mileage) || 0 }
     updateVehicle(vehicle.id, { records: [...(vehicle.records || []), rec] })
-    setForm({ service: '', shop: '', date: '', mileage: '', cost: '', notes: '', verified: false })
-    setShowForm(false)
+    setForm(BLANK_FORM)
+    setShowForm(false); setScanError('')
   }
 
   function remove(id) {
@@ -240,8 +275,31 @@ function ServiceHistoryTab({ vehicle, updateVehicle }) {
 
   return (
     <div>
-      <SectionHeader title={`${records.length} service records`}
-        action={<Btn size="sm" variant="primary" onClick={() => setShowForm(s => !s)}><i className="ti ti-plus" /> Add record</Btn>} />
+      <input
+        ref={photoRef}
+        type="file"
+        accept="image/*"
+        style={{ display: 'none' }}
+        onChange={e => { scanReceipt(e.target.files[0]); e.target.value = '' }}
+      />
+      <SectionHeader
+        title={`${records.length} service records`}
+        action={
+          <div style={{ display: 'flex', gap: 6 }}>
+            <Btn size="sm" onClick={() => photoRef.current?.click()} disabled={scanLoading}>
+              {scanLoading
+                ? <><i className="ti ti-loader-2" style={{ animation: 'spin 1s linear infinite' }} /> Scanning…</>
+                : <><i className="ti ti-camera" /> Scan</>}
+            </Btn>
+            <Btn size="sm" variant="primary" onClick={() => { setShowForm(s => !s); setScanError('') }}>
+              <i className="ti ti-plus" /> Add
+            </Btn>
+          </div>
+        }
+      />
+      {scanError && (
+        <p className={styles.scanError}>{scanError}</p>
+      )}
 
       {showForm && (
         <Card className={styles.formCard}>
@@ -470,18 +528,28 @@ function ScanReceiptTab({ vehicle, updateVehicle }) {
 
   const ALLOWED = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'application/pdf']
 
-  function loadFile(f) {
+  async function loadFile(f) {
     if (!f) return
     if (!ALLOWED.includes(f.type)) {
       alert('Please upload a PDF or image file (JPEG, PNG, WebP)')
       return
     }
-    const reader = new FileReader()
-    reader.onload = e => {
-      setFile({ name: f.name, base64: e.target.result.split(',')[1], mediaType: f.type })
-      setResult(null); setSaved(false)
+    try {
+      if (f.type === 'application/pdf') {
+        const reader = new FileReader()
+        reader.onload = e => {
+          setFile({ name: f.name, base64: e.target.result.split(',')[1], mediaType: f.type })
+          setResult(null); setSaved(false)
+        }
+        reader.readAsDataURL(f)
+      } else {
+        const base64 = await compressImage(f)
+        setFile({ name: f.name, base64, mediaType: 'image/jpeg' })
+        setResult(null); setSaved(false)
+      }
+    } catch {
+      alert('Could not load file. Please try again.')
     }
-    reader.readAsDataURL(f)
   }
 
   function clearFile(e) {

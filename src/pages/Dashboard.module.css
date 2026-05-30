@@ -44,10 +44,23 @@
   border-color: rgba(83,74,183,0.2);
 }
 
+.vehicleItemTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
 .vehicleItemName {
   font-size: 14px;
   font-weight: 500;
-  margin-bottom: 4px;
+}
+
+.itemSilhouette {
+  width: 52px;
+  color: var(--purple-mid);
+  opacity: 0.5;
+  flex-shrink: 0;
 }
 
 .vehicleItemMeta {
@@ -75,10 +88,18 @@
 
 .vehicleHeader {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
+  gap: 12px;
   margin-bottom: 1.25rem;
 }
+
+.headerSilhouette {
+  width: 120px;
+  color: var(--border-mid);
+  flex-shrink: 0;
+}
+@media (max-width: 520px) { .headerSilhouette { display: none; } }
 
 .vehicleName {
   font-size: 22px;
@@ -349,6 +370,15 @@
   gap: 10px;
   font-size: 14px;
   font-weight: 500;
+}
+
+.scanError {
+  font-size: 13px;
+  color: #993C1D;
+  background: #FAECE7;
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  margin-bottom: 12px;
 }
 
 /* ── Receipt / Sell ── */

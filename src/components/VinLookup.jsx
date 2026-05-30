@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react'
 import { Btn } from './UI'
 import { callClaudeWithFile } from '../lib/claude'
+import { compressImage } from '../lib/image'
 import styles from './VinLookup.module.css'
 
 const VIN_SYSTEM = 'You are a VIN extraction assistant. Find the 17-character Vehicle Identification Number in this image. It may appear on a dashboard plate, door jamb sticker, title, registration, or insurance card. Respond with ONLY the 17-character VIN in uppercase — no spaces, no punctuation, nothing else. If no VIN is clearly visible, respond with exactly: NOT_FOUND'
@@ -10,33 +11,35 @@ export default function VinLookup({ onAdd, onCancel }) {
   const [mileage, setMileage] = useState('')
   const [loading, setLoading] = useState(false)
   const [scanning, setScanning] = useState(false)
+  const [scanFailed, setScanFailed] = useState(false)
   const [result, setResult] = useState(null)
   const [error, setError] = useState('')
   const photoRef = useRef(null)
+  const vinInputRef = useRef(null)
 
   async function scanPhoto(file) {
     if (!file) return
-    setScanning(true); setError(''); setResult(null)
+    setScanning(true); setScanFailed(false); setError(''); setResult(null)
     try {
-      const base64 = await new Promise((resolve, reject) => {
-        const reader = new FileReader()
-        reader.onload = e => resolve(e.target.result.split(',')[1])
-        reader.onerror = reject
-        reader.readAsDataURL(file)
-      })
-      const extracted = await callClaudeWithFile(VIN_SYSTEM, 'Extract the VIN from this image.', base64, file.type)
+      const base64 = await compressImage(file)
+      const extracted = await callClaudeWithFile(VIN_SYSTEM, 'Extract the VIN from this image.', base64, 'image/jpeg')
       const cleaned = extracted.trim().toUpperCase().replace(/[^A-Z0-9]/g, '')
       if (cleaned.length === 17) {
         setVin(cleaned)
         setScanning(false)
         await decode(cleaned)
       } else {
-        setError('No VIN found in that photo. Try a clearer shot or type it below.')
+        setScanFailed(true)
+        setError('No VIN found in that photo — try a closer, clearer shot or type it below.')
         setScanning(false)
+        setTimeout(() => vinInputRef.current?.focus(), 50)
       }
-    } catch {
-      setError('Photo scan failed. Please type the VIN manually.')
+    } catch (err) {
+      setScanFailed(true)
+      const detail = err?.message ? ` (${err.message})` : ''
+      setError(`Scan failed${detail}. Type the VIN manually below.`)
       setScanning(false)
+      setTimeout(() => vinInputRef.current?.focus(), 50)
     }
   }
 
@@ -99,12 +102,15 @@ export default function VinLookup({ onAdd, onCancel }) {
         }
       </Btn>
 
-      <div className={styles.divider}><span>or enter manually</span></div>
+      <div className={`${styles.divider} ${scanFailed ? styles.dividerFallback : ''}`}>
+        <span>{scanFailed ? 'Enter VIN manually ↓' : 'or enter manually'}</span>
+      </div>
 
-      <div className={styles.inputRow}>
+      <div className={`${styles.inputRow} ${scanFailed ? styles.inputRowHighlight : ''}`}>
         <input
+          ref={vinInputRef}
           value={vin}
-          onChange={e => setVin(e.target.value.toUpperCase())}
+          onChange={e => { setVin(e.target.value.toUpperCase()); setScanFailed(false) }}
           placeholder="17-character VIN"
           maxLength={17}
           style={{ fontFamily: 'var(--font-mono)', letterSpacing: '0.05em' }}
