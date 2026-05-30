@@ -128,12 +128,14 @@ export default function Dashboard() {
           <>
             {/* Vehicle header */}
             <div className={styles.vehicleHeader}>
-              <div>
-                <h1 className={styles.vehicleName}>{vehicle.year} {vehicle.make} {vehicle.model} {vehicle.trim}</h1>
-                <p className={styles.vehicleSub}>{vehicle.engine} · {vehicle.transmission}</p>
+              <div className={styles.vehicleHeaderLeft}>
+                <VehicleImage bodyClass={vehicle.bodyClass} height={72} width={130} style={{ flexShrink: 0 }} />
+                <div className={styles.vehicleHeaderInfo}>
+                  <h1 className={styles.vehicleName}>{vehicle.year} {vehicle.make} {vehicle.model} {vehicle.trim}</h1>
+                  <p className={styles.vehicleSub}>{vehicle.engine} · {vehicle.transmission}</p>
+                </div>
               </div>
-              <VehicleImage bodyClass={vehicle.bodyClass} height={72} width={140} />
-              <div style={{ display: 'flex', gap: 6 }}>
+              <div className={styles.vehicleHeaderActions}>
                 <Btn size="sm" onClick={handleShare} disabled={sharing}>
                   {sharing ? <><i className="ti ti-loader-2" style={{ animation: 'spin 1s linear infinite' }} /> Sharing…</> : shareCopied ? <><i className="ti ti-check" /> Copied!</> : <><i className="ti ti-share" /> Share</>}
                 </Btn>
@@ -762,49 +764,64 @@ function AIAdvisorTab({ vehicle }) {
 
   const systemPrompt = `You are a knowledgeable, friendly vehicle maintenance advisor. The user has a ${vehicle.year} ${vehicle.make} ${vehicle.model} ${vehicle.trim} with ${vehicle.engine} engine, ${(vehicle.mileage||0).toLocaleString()} miles.\n\nService history (date | service | category | mileage | cost | notes | source):\n${recordContext}\n\nGive concise, practical advice. Answer cost questions using the dollar amounts above. Keep answers under 200 words.`
 
-  async function send() {
-    if (!input.trim() || loading) return
-    const userMsg = input.trim()
+  async function send(msgOverride) {
+    const userMsg = (typeof msgOverride === 'string' ? msgOverride : input).trim()
+    if (!userMsg || loading) return
     setInput('')
     setMessages(m => [...m, { role: 'user', text: userMsg }])
     setLoading(true)
-    const reply = await callClaude(systemPrompt, userMsg)
-    setMessages(m => [...m, { role: 'assistant', text: reply }])
+    try {
+      const reply = await callClaude(systemPrompt, userMsg)
+      setMessages(m => [...m, { role: 'assistant', text: reply }])
+    } catch {
+      setMessages(m => [...m, { role: 'assistant', text: 'Something went wrong — please try again.' }])
+    }
     setLoading(false)
   }
 
   const suggestions = [
-    'What maintenance is due soon?',
-    'Is my mileage normal for this car?',
-    'How much should I expect to spend on repairs?',
-    'What should I watch out for on this vehicle?',
+    'What maintenance is likely due?',
+    'How much have I spent this year?',
+    `What's my most expensive service?`,
+    'Am I driving more or less than average?',
   ]
 
   return (
     <div className={styles.chatWrap}>
       <div className={styles.chatMessages}>
-        {messages.length === 0 && (
-          <div className={styles.chatEmpty}>
-            <i className="ti ti-robot" style={{fontSize:32,color:'var(--purple-mid)'}} />
-            <p>Ask anything about your {vehicle.year} {vehicle.make} {vehicle.model}</p>
+        {messages.length === 0 ? (
+          <div className={styles.chatWelcome}>
+            <div className={styles.chatWelcomeIcon}>🔧</div>
+            <h3 className={styles.chatWelcomeTitle}>Ask anything about your vehicle</h3>
+            <p className={styles.chatWelcomeSub}>{vehicle.year} {vehicle.make} {vehicle.model}</p>
             <div className={styles.suggestions}>
               {suggestions.map(s => (
-                <button key={s} className={styles.suggestionBtn} onClick={() => setInput(s)}>{s}</button>
+                <button key={s} className={styles.suggestionBtn} onClick={() => send(s)}>{s}</button>
               ))}
             </div>
           </div>
+        ) : (
+          <>
+            {messages.map((m, i) => (
+              <div key={i} className={`${styles.bubble} ${m.role === 'user' ? styles.bubbleUser : styles.bubbleAI}`}>
+                {m.text}
+              </div>
+            ))}
+            {loading && <div className={`${styles.bubble} ${styles.bubbleAI} ${styles.bubbleLoading}`}>Thinking…</div>}
+            <div ref={endRef} />
+          </>
         )}
-        {messages.map((m, i) => (
-          <div key={i} className={`${styles.bubble} ${m.role === 'user' ? styles.bubbleUser : styles.bubbleAI}`}>
-            {m.text}
-          </div>
-        ))}
-        {loading && <div className={`${styles.bubble} ${styles.bubbleAI} ${styles.bubbleLoading}`}>Thinking…</div>}
-        <div ref={endRef} />
       </div>
       <div className={styles.chatInput}>
-        <input value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => e.key==='Enter'&&send()} placeholder="Ask about maintenance, costs, repairs…" />
-        <Btn variant="primary" onClick={send} disabled={loading || !input.trim()}><i className="ti ti-send" /></Btn>
+        <input
+          value={input}
+          onChange={e => setInput(e.target.value)}
+          onKeyDown={e => e.key === 'Enter' && send()}
+          placeholder="Ask about maintenance, costs, repairs…"
+        />
+        <Btn variant="primary" onClick={() => send()} disabled={loading || !input.trim()}>
+          <i className="ti ti-send" />
+        </Btn>
       </div>
     </div>
   )
