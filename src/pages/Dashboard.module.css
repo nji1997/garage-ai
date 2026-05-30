@@ -513,7 +513,17 @@
 }
 
 /* ── AI Chat ── */
-.chatWrap { display: flex; flex-direction: column; height: 520px; }
+.chatWrap {
+  display: flex;
+  flex-direction: column;
+  height: clamp(340px, calc(100vh - 320px), 620px);
+}
+
+@media (max-width: 768px) {
+  .chatWrap {
+    height: clamp(280px, calc(100vh - 440px), 500px);
+  }
+}
 
 .chatMessages {
   flex: 1;
