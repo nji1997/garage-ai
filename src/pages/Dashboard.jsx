@@ -171,6 +171,10 @@ function VehicleListItem({ vehicle, selected, onClick }) {
   const records = vehicle.records || []
   const reminders = vehicle.reminders || []
   const urgent = reminders.filter(r => r.priority === 'high').length
+  const latestMileage = [...records]
+    .filter(r => r.date && r.mileage > 0)
+    .sort((a, b) => new Date(b.date) - new Date(a.date))[0]?.mileage || vehicle.mileage || 0
+  const mileageLabel = Math.round(latestMileage / 1000) + 'k'
   return (
     <div className={`${styles.vehicleItem} ${selected ? styles.vehicleItemSelected : ''}`} onClick={onClick}>
       <div className={styles.vehicleItemTop}>
@@ -178,7 +182,7 @@ function VehicleListItem({ vehicle, selected, onClick }) {
         <VehicleImage bodyClass={vehicle.bodyClass} height={36} width={64} style={{ borderRadius: 6 }} />
       </div>
       <div className={styles.vehicleItemMeta}>
-        <span><i className="ti ti-road" /> {(vehicle.mileage || 0).toLocaleString()} mi</span>
+        <span><i className="ti ti-road" /> {mileageLabel}</span>
         <span><i className="ti ti-tool" /> {records.length}</span>
         {urgent > 0 && <Badge color="coral">{urgent} due</Badge>}
       </div>
