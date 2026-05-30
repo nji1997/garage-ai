@@ -146,15 +146,43 @@
 /* ── Overview ── */
 .overviewGrid { display: flex; flex-direction: column; gap: 1.25rem; }
 
-.overviewSilhouette {
+.aiImageWrap {
+  position: relative;
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  min-height: 80px;
   display: flex;
+  align-items: center;
   justify-content: center;
-  padding: 0.25rem 0;
 }
-.overviewSilhouette > * {
-  width: 180px;
-  color: var(--border-mid);
+
+.aiCarImage {
+  width: 100%;
+  display: block;
+  border-radius: var(--radius);
 }
+
+.regenBtn {
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.aiImageWrap:hover .regenBtn { opacity: 1; }
+
+.generateImageBox {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 1.25rem;
+}
+
+.imgExpiredNote { font-size: 12px; color: var(--text3); }
+.imgErrorNote { font-size: 12px; color: var(--coral); max-width: 320px; text-align: center; }
 
 .statSub {
   font-size: 11px;
@@ -272,7 +300,96 @@
   margin-bottom: 4px;
 }
 
-/* ── Mods ── */
+/* ── Category selector ── */
+.catBtnRow { display: flex; gap: 6px; flex-wrap: wrap; }
+.catBtn {
+  padding: 5px 14px;
+  font-size: 13px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border-mid);
+  background: var(--surface);
+  color: var(--text2);
+  cursor: pointer;
+  transition: all 0.12s;
+}
+.catBtn:hover { border-color: var(--purple); color: var(--purple); }
+.catBtn-Maintenance { background: var(--teal-light); border-color: var(--teal); color: #0a6b52; font-weight: 500; }
+.catBtn-Upgrade { background: var(--purple-light); border-color: var(--purple); color: var(--purple); font-weight: 500; }
+.catBtn-Insurance { background: var(--amber-light); border-color: var(--amber); color: #8a5c00; font-weight: 500; }
+
+/* ── Costs tab ── */
+.costsWrap { display: flex; flex-direction: column; gap: 1.25rem; }
+
+.pivotTable {
+  width: 100%;
+  border-collapse: collapse;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: var(--shadow);
+  font-size: 14px;
+}
+
+.pivotCorner { width: 80px; }
+
+.pivotTh {
+  padding: 14px 16px;
+  text-align: center;
+  border-left: 1px solid var(--border);
+  background: var(--surface2);
+  vertical-align: middle;
+}
+
+.pivotThTotal {
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  margin-top: 6px;
+}
+
+.pivotYearCell {
+  padding: 12px 16px;
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--text2);
+  border-top: 1px solid var(--border);
+  white-space: nowrap;
+  width: 80px;
+}
+
+.pivotBodyRow:hover { background: var(--surface2); }
+
+.pivotTd {
+  padding: 12px 16px;
+  text-align: right;
+  border-top: 1px solid var(--border);
+  border-left: 1px solid var(--border);
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+}
+
+.pivotTdEmpty {
+  color: var(--text3);
+  font-weight: 400;
+  text-align: center;
+}
+
+.grandTotalRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.25rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+.grandTotalLabel { font-size: 15px; font-weight: 600; margin-bottom: 4px; }
+.grandTotalSub { font-size: 12px; color: var(--text3); }
+.grandTotalValue { font-size: 32px; font-weight: 700; letter-spacing: -1px; color: var(--purple); }
+
+/* ── Mods (kept for data reference, tab removed) ── */
 .modList { display: flex; flex-direction: column; gap: 8px; }
 .modItem {
   display: flex;
@@ -285,6 +402,42 @@
   font-size: 14px;
 }
 .modItem span { flex: 1; }
+
+/* ── Chart legend ── */
+.chartLegend {
+  display: flex;
+  gap: 16px;
+  margin-top: 10px;
+  font-size: 11px;
+  color: var(--text3);
+  align-items: center;
+  flex-wrap: wrap;
+}
+.chartLegend span { display: flex; align-items: center; gap: 5px; }
+.legendDot {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  background: #534AB7;
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 1.5px #534AB7;
+  flex-shrink: 0;
+}
+.legendLine {
+  width: 18px; height: 2px;
+  background: #534AB7;
+  flex-shrink: 0;
+}
+.legendDashed {
+  width: 18px; height: 2px;
+  background: repeating-linear-gradient(90deg, #534AB7 0 6px, transparent 6px 10px);
+  opacity: 0.5;
+  flex-shrink: 0;
+}
+.legendBar {
+  width: 12px; height: 12px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
 
 /* ── AI Chat ── */
 .chatWrap { display: flex; flex-direction: column; height: 520px; }

@@ -8,7 +8,11 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(undefined) // undefined = loading
 
   useEffect(() => {
-    const unsub = onAuthStateChanged(auth, (u) => setUser(u ?? null))
+    const unsub = onAuthStateChanged(
+      auth,
+      (u) => setUser(u ?? null),
+      (err) => { console.error('[auth]', err); setUser(null) },
+    )
     return unsub
   }, [])
 
