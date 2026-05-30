@@ -432,7 +432,7 @@ function ServiceHistoryTab({ vehicle, updateVehicle }) {
               {r.notes && <div className={styles.recordNotes}>{r.notes}</div>}
             </div>
             <div className={styles.recordRight}>
-              <span className={styles.recordCost}>${(r.cost||0).toFixed(2)}</span>
+              <span className={styles.recordCost}>${(r.cost||0).toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}</span>
               <button className={styles.removeBtn} onClick={() => remove(r.id)} title="Remove"><i className="ti ti-x" /></button>
             </div>
           </div>
@@ -720,7 +720,7 @@ function AIAdvisorTab({ vehicle }) {
       r.service,
       r.category || 'Maintenance',
       r.mileage > 0 ? `${r.mileage.toLocaleString()} mi` : null,
-      r.cost > 0 ? `$${r.cost.toFixed(2)}` : null,
+      r.cost > 0 ? `$${r.cost.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2})}` : null,
       r.notes || null,
       r.verified ? 'shop-verified' : 'DIY',
     ].filter(Boolean).join(' | ')).join('\n') || 'none yet'
@@ -970,7 +970,7 @@ function SellTab({ vehicle }) {
         {[
           ['Total records', records.length, 'file-text'],
           ['Verified records', verified, 'circle-check'],
-          ['Total maintenance spent', '$' + totalSpent.toFixed(0), 'coin'],
+          ['Total maintenance spent', '$' + Math.round(totalSpent).toLocaleString(), 'coin'],
           ['Modifications', (vehicle.mods||[]).length, 'bolt'],
         ].map(([label, value, icon]) => (
           <div key={label} className={styles.statCard}>
