@@ -765,10 +765,13 @@ function RecallsTab({ vehicle }) {
         const { make, model, year } = vehicle
         const url = `https://api.nhtsa.gov/recalls/recallsByVehicle?make=${encodeURIComponent(make)}&model=${encodeURIComponent(model)}&modelYear=${encodeURIComponent(year)}`
         const res = await fetch(url)
+        // NHTSA returns 400 when no recall records exist for this vehicle/year — treat as empty
+        if (res.status === 400) { setRecalls([]); setLoading(false); return }
         if (!res.ok) throw new Error(`HTTP ${res.status}`)
         const data = await res.json()
         setRecalls(data.results || [])
-      } catch {
+      } catch (err) {
+        console.error('NHTSA recall fetch error:', err)
         setError('Could not load recall data — check your connection and try again.')
       }
       setLoading(false)
@@ -777,12 +780,7 @@ function RecallsTab({ vehicle }) {
   }, [vehicle.id])
 
   function parseDate(raw) {
-    if (!raw) return ''
-    const match = raw.match(/\/Date\((\d+)\)\//)
-    if (match) {
-      return new Date(parseInt(match[1])).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
-    }
-    return raw
+    return raw || ''
   }
 
   if (loading) return <div className={styles.center}><Spinner /></div>
@@ -821,15 +819,25 @@ function RecallsTab({ vehicle }) {
             {r.ReportReceivedDate && (
               <div className={styles.recallDate}>{parseDate(r.ReportReceivedDate)}</div>
             )}
-            {r.Defect && (
-              <p className={styles.recallText}><strong>Defect:</strong> {r.Defect}</p>
+            {r.Summary && (
+              <p className={styles.recallText}><strong>Summary:</strong> {r.Summary}</p>
             )}
             {r.Consequence && (
               <p className={styles.recallText}><strong>Consequence:</strong> {r.Consequence}</p>
             )}
             {r.Remedy && (
-              <p className={styles.recallText}><strong>Remedy:</strong> {r.Remedy}</p>
+              <p className={styles.recallText}><strong>What to do:</strong> {r.Remedy}</p>
             )}
+            <div className={styles.recallFooter}>
+              <a
+                href={`https://www.nhtsa.gov/recalls?nhtsaId=${r.NHTSACampaignNumber}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={styles.recallLink}
+              >
+                View on NHTSA →
+              </a>
+            </div>
           </Card>
         ))}
       </div>

@@ -585,6 +585,16 @@
 }
 .recallText strong { color: var(--text); font-weight: 500; }
 
+.recallFooter {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+
+.recallLink { font-size: 12px; }
+
 /* ── AI Chat ── */
 .chatWrap {
   display: flex;
