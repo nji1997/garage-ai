@@ -486,6 +486,7 @@ const CATS = ['Maintenance', 'Upgrade', 'Insurance']
 
 function CostsTab({ vehicle }) {
   const records = vehicle.records || []
+  const [selectedCell, setSelectedCell] = useState(null)
 
   if (records.length === 0) {
     return <EmptyState icon="coin" title="No cost records" subtitle="Add service records with costs to see the breakdown." />
@@ -497,6 +498,7 @@ function CostsTab({ vehicle }) {
   function sumWhere(fn) {
     return records.filter(fn).reduce((s, r) => s + (r.cost || 0), 0)
   }
+  function fmt(n) { return '$' + Math.round(n).toLocaleString() }
 
   const years = [...new Set(
     records.filter(r => r.date).map(r => new Date(r.date).getFullYear())
@@ -504,6 +506,12 @@ function CostsTab({ vehicle }) {
 
   const catTotals = CATS.map(cat => sumWhere(r => catMatch(r, cat)))
   const grandTotal = catTotals[0] + catTotals[1]
+
+  const detailRecords = selectedCell
+    ? records
+        .filter(r => catMatch(r, selectedCell.cat) && r.date && new Date(r.date).getFullYear() === selectedCell.year)
+        .sort((a, b) => new Date(b.date) - new Date(a.date))
+    : []
 
   return (
     <div className={styles.costsWrap}>
@@ -514,7 +522,7 @@ function CostsTab({ vehicle }) {
             {CATS.map((cat, i) => (
               <th key={cat} className={styles.pivotTh}>
                 <Badge color={CAT_COLOR[cat]}>{cat}</Badge>
-                <div className={styles.pivotThTotal}>${catTotals[i].toFixed(0)}</div>
+                <div className={styles.pivotThTotal}>{fmt(catTotals[i])}</div>
               </th>
             ))}
           </tr>
@@ -525,9 +533,14 @@ function CostsTab({ vehicle }) {
               <td className={styles.pivotYearCell}>{year}</td>
               {CATS.map(cat => {
                 const val = sumWhere(r => catMatch(r, cat) && r.date && new Date(r.date).getFullYear() === year)
+                const active = selectedCell?.year === year && selectedCell?.cat === cat
                 return (
-                  <td key={cat} className={`${styles.pivotTd} ${val === 0 ? styles.pivotTdEmpty : ''}`}>
-                    {val > 0 ? `$${val.toFixed(0)}` : '—'}
+                  <td
+                    key={cat}
+                    className={`${styles.pivotTd} ${val === 0 ? styles.pivotTdEmpty : styles.pivotTdClickable} ${active ? styles.pivotTdActive : ''}`}
+                    onClick={() => val > 0 && setSelectedCell(active ? null : { year, cat })}
+                  >
+                    {val > 0 ? fmt(val) : '—'}
                   </td>
                 )
               })}
@@ -536,13 +549,40 @@ function CostsTab({ vehicle }) {
         </tbody>
       </table>
 
-      <div className={styles.grandTotalRow}>
-        <div>
-          <div className={styles.grandTotalLabel}>Grand Total</div>
-          <div className={styles.grandTotalSub}>Maintenance + Upgrades · Insurance excluded</div>
+      {selectedCell ? (
+        <div className={styles.cellDetail}>
+          <div className={styles.cellDetailHeader}>
+            <span><Badge color={CAT_COLOR[selectedCell.cat]}>{selectedCell.cat}</Badge>&nbsp;{selectedCell.year}</span>
+            <button className={styles.removeBtn} onClick={() => setSelectedCell(null)}><i className="ti ti-x" /></button>
+          </div>
+          <table className={styles.detailTable}>
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Summary</th>
+                <th>Amount</th>
+              </tr>
+            </thead>
+            <tbody>
+              {detailRecords.map(r => (
+                <tr key={r.id}>
+                  <td>{r.date}</td>
+                  <td>{r.service}</td>
+                  <td>{fmt(r.cost || 0)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
-        <div className={styles.grandTotalValue}>${grandTotal.toFixed(2)}</div>
-      </div>
+      ) : (
+        <div className={styles.grandTotalRow}>
+          <div>
+            <div className={styles.grandTotalLabel}>Grand Total</div>
+            <div className={styles.grandTotalSub}>Maintenance + Upgrades · Insurance excluded</div>
+          </div>
+          <div className={styles.grandTotalValue}>{fmt(grandTotal)}</div>
+        </div>
+      )}
     </div>
   )
 }
@@ -712,7 +752,19 @@ function AIAdvisorTab({ vehicle }) {
 
   useEffect(() => { endRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [messages])
 
-  const systemPrompt = `You are a knowledgeable, friendly vehicle maintenance advisor. The user has a ${vehicle.year} ${vehicle.make} ${vehicle.model} ${vehicle.trim} with ${vehicle.engine} engine, ${(vehicle.mileage||0).toLocaleString()} miles. Service history: ${(vehicle.records||[]).map(r=>`${r.service} at ${r.mileage?.toLocaleString()||'?'} mi on ${r.date}`).join('; ') || 'none yet'}. Upcoming reminders: ${(vehicle.reminders||[]).map(r=>`${r.service} due at ${(r.dueMileage||0).toLocaleString()} mi`).join('; ') || 'none'}. Give concise, practical advice. Keep answers under 200 words.`
+  const recordContext = (vehicle.records||[])
+    .slice().sort((a,b) => new Date(b.date) - new Date(a.date))
+    .map(r => [
+      r.date,
+      r.service,
+      r.category || 'Maintenance',
+      r.mileage > 0 ? `${r.mileage.toLocaleString()} mi` : null,
+      r.cost > 0 ? `$${r.cost.toFixed(2)}` : null,
+      r.notes || null,
+      r.verified ? 'shop-verified' : 'DIY',
+    ].filter(Boolean).join(' | ')).join('\n') || 'none yet'
+
+  const systemPrompt = `You are a knowledgeable, friendly vehicle maintenance advisor. The user has a ${vehicle.year} ${vehicle.make} ${vehicle.model} ${vehicle.trim} with ${vehicle.engine} engine, ${(vehicle.mileage||0).toLocaleString()} miles.\n\nService history (date | service | category | mileage | cost | notes | source):\n${recordContext}\n\nGive concise, practical advice. Answer cost questions using the dollar amounts above. Keep answers under 200 words.`
 
   async function send() {
     if (!input.trim() || loading) return

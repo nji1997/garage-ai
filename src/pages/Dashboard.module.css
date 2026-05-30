@@ -381,7 +381,7 @@
 
 .pivotTd {
   padding: 12px 16px;
-  text-align: right;
+  text-align: center;
   border-top: 1px solid var(--border);
   border-left: 1px solid var(--border);
   font-variant-numeric: tabular-nums;
@@ -393,6 +393,61 @@
   font-weight: 400;
   text-align: center;
 }
+
+.pivotTdClickable {
+  cursor: pointer;
+  transition: background 0.12s;
+}
+.pivotTdClickable:hover { background: var(--purple-light); }
+
+.pivotTdActive {
+  background: var(--purple-light);
+  color: var(--purple);
+  font-weight: 600;
+}
+
+.cellDetail {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  box-shadow: var(--shadow);
+}
+
+.cellDetailHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 16px;
+  background: var(--surface2);
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+  font-weight: 500;
+  gap: 8px;
+}
+
+.detailTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.detailTable th {
+  padding: 8px 16px;
+  text-align: left;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text2);
+  border-bottom: 1px solid var(--border);
+}
+.detailTable td {
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
+}
+.detailTable tr:last-child td { border-bottom: none; }
+.detailTable tr:hover td { background: var(--surface2); }
+.detailTable td:last-child { text-align: right; font-variant-numeric: tabular-nums; font-weight: 500; }
 
 .grandTotalRow {
   display: flex;
