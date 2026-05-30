@@ -189,64 +189,25 @@ function OverviewTab({ vehicle, updateVehicle }) {
   const displayMileage = latestRecord?.mileage || vehicle.mileage || 0
   const mileageDate = latestRecord?.date || null
 
-  const byService = {}
-  records.forEach(r => { byService[r.service] = (byService[r.service] || 0) + r.cost })
-  const spending = Object.entries(byService).sort((a, b) => b[1] - a[1])
-  const maxSpend = Math.max(...spending.map(e => e[1]), 1)
-  const barColors = ['#7F77DD','#1D9E75','#D85A30','#BA7517','#378ADD','#D4537E']
+  const catSpend = [
+    { label: 'Maintenance', color: '#1D9E75', total: records.filter(r => !r.category || r.category === 'Maintenance').reduce((s, r) => s + (r.cost || 0), 0) },
+    { label: 'Upgrade',     color: '#534AB7', total: records.filter(r => r.category === 'Upgrade').reduce((s, r) => s + (r.cost || 0), 0) },
+    { label: 'Insurance',   color: '#BA7517', total: records.filter(r => r.category === 'Insurance').reduce((s, r) => s + (r.cost || 0), 0) },
+  ]
+  const maxCatSpend = Math.max(...catSpend.map(c => c.total), 1)
 
   const [editMileage, setEditMileage] = useState(false)
   const [mi, setMi] = useState(vehicle.mileage || 0)
-  const [imgGenerating, setImgGenerating] = useState(false)
-  const [imgError, setImgError] = useState('')
-  const [imgBroken, setImgBroken] = useState(false)
-
-  async function generateAiImage() {
-    setImgGenerating(true); setImgError(''); setImgBroken(false)
-    try {
-      const colorStr = vehicle.color ? `${vehicle.color} ` : ''
-      const trimStr = vehicle.trim ? ` ${vehicle.trim}` : ''
-      const prompt = `Professional automotive photography, ${vehicle.year} ${colorStr}${vehicle.make} ${vehicle.model}${trimStr}, 3/4 front angle, white studio background, photorealistic, high detail`
-      const seed = vehicle.id.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0) % 99999
-      const url = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=1792&height=1024&nologo=true&seed=${seed}&model=flux`
-      await updateVehicle(vehicle.id, { aiImageUrl: url })
-    } catch (err) {
-      setImgError(err.message)
-    }
-    setImgGenerating(false)
-  }
 
   return (
     <div className={styles.overviewGrid}>
-      <div className={styles.aiImageWrap}>
-        {vehicle.aiImageUrl && !imgBroken ? (
-          <>
-            <img
-              src={vehicle.aiImageUrl}
-              alt={`${vehicle.year} ${vehicle.make} ${vehicle.model}`}
-              className={styles.aiCarImage}
-              onError={() => setImgBroken(true)}
-            />
-            <Btn size="sm" className={styles.regenBtn} onClick={generateAiImage} disabled={imgGenerating}>
-              {imgGenerating ? 'Generating…' : <><i className="ti ti-refresh" /> Regenerate</>}
-            </Btn>
-          </>
-        ) : (
-          <div className={styles.generateImageBox}>
-            <Btn size="sm" variant="primary" onClick={generateAiImage} disabled={imgGenerating}>
-              {imgGenerating
-                ? <><i className="ti ti-loader-2" style={{ animation: 'spin 1s linear infinite' }} /> Generating AI photo…</>
-                : <><i className="ti ti-sparkles" /> Generate AI photo</>}
-            </Btn>
-            {imgBroken && <span className={styles.imgExpiredNote}>Previous image expired</span>}
-            {imgError && <span className={styles.imgErrorNote}>{imgError}</span>}
-          </div>
-        )}
+      <div className={styles.overviewSilhouette}>
+        <VehicleSilhouette bodyClass={vehicle.bodyClass} />
       </div>
       <div className={styles.statsRow}>
         {[
           { label: 'Mileage', value: displayMileage.toLocaleString() + ' mi', icon: 'road', sub: mileageDate },
-          { label: 'Total spent', value: '$' + total.toFixed(0), icon: 'coin' },
+          { label: 'Total spent', value: '$' + Math.round(total).toLocaleString(), icon: 'coin' },
           { label: 'Records', value: records.length, icon: 'file-text' },
           { label: 'Verified', value: verified, icon: 'circle-check' },
         ].map(s => (
@@ -275,23 +236,23 @@ function OverviewTab({ vehicle, updateVehicle }) {
         </Card>
 
         <Card>
-          <SectionHeader title="Spending by service" />
-          {spending.length === 0
+          <SectionHeader title="Spending by category" />
+          {records.length === 0
             ? <p className={styles.muted}>No records yet.</p>
-            : spending.map(([svc, cost], i) => (
-              <div key={svc} className={styles.barRow}>
+            : catSpend.map(({ label, color, total: catTotal }) => (
+              <div key={label} className={styles.barRow}>
                 <div className={styles.barLabel}>
-                  <span>{svc}</span><span>${cost.toFixed(0)}</span>
+                  <span>{label}</span><span>${Math.round(catTotal).toLocaleString()}</span>
                 </div>
                 <div className={styles.barBg}>
-                  <div className={styles.barFill} style={{ width: `${(cost/maxSpend)*100}%`, background: barColors[i % barColors.length] }} />
+                  <div className={styles.barFill} style={{ width: `${(catTotal / maxCatSpend) * 100}%`, background: color }} />
                 </div>
               </div>
             ))
           }
-          {spending.length > 0 && (
+          {records.length > 0 && (
             <div className={styles.totalRow}>
-              <span>Total</span><strong>${total.toFixed(2)}</strong>
+              <span>Total</span><strong>${Math.round(total).toLocaleString()}</strong>
             </div>
           )}
         </Card>
@@ -452,7 +413,7 @@ function ServiceHistoryTab({ vehicle, updateVehicle }) {
                     <Badge color={CAT_COLOR[r.category] || 'teal'}>{r.category || 'Maintenance'}</Badge>
                   </button>
                 )}
-                <Badge color={r.verified ? 'teal' : 'gray'}>{r.verified ? '✓ Verified' : 'DIY'}</Badge>
+                {r.verified && <Badge color="teal">✓ Verified</Badge>}
               </div>
               {editingCatId === r.id && (
                 <div className={styles.inlineCatPicker}>
