@@ -1,0 +1,87 @@
+.banner {
+  position: fixed;
+  /* Sits above the MobileBar (60px) + safe area */
+  bottom: calc(60px + env(safe-area-inset-bottom));
+  left: 0;
+  right: 0;
+  z-index: 150;
+  padding: 0 12px 8px;
+  animation: slideUp 0.25s ease;
+}
+
+@keyframes slideUp {
+  from { transform: translateY(110%); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+
+.inner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #1e1b4b;
+  border: 1px solid rgba(127, 119, 221, 0.35);
+  border-radius: 14px;
+  padding: 12px 14px;
+  box-shadow: 0 -2px 20px rgba(0, 0, 0, 0.35);
+}
+
+.icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+
+.text {
+  flex: 1;
+  font-size: 13px;
+  line-height: 1.4;
+  color: #e2e8f0;
+  margin: 0;
+}
+
+.shareIcon {
+  display: inline-block;
+  background: #e2e8f0;
+  color: #1e1b4b;
+  border-radius: 4px;
+  padding: 0 4px;
+  font-size: 11px;
+  font-weight: 700;
+  vertical-align: middle;
+  margin: 0 1px;
+}
+
+.actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.addBtn {
+  font-size: 13px;
+  font-weight: 600;
+  padding: 7px 16px;
+  border-radius: 8px;
+  background: #534AB7;
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: opacity 0.12s;
+}
+.addBtn:active { opacity: 0.75; }
+
+.dismissBtn {
+  font-size: 13px;
+  font-weight: 500;
+  padding: 7px 12px;
+  border-radius: 8px;
+  background: transparent;
+  color: #94a3b8;
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: opacity 0.12s;
+}
+.dismissBtn:active { opacity: 0.7; }
