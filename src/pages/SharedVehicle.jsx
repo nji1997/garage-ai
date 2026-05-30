@@ -5,12 +5,6 @@ import { db } from '../firebase'
 import { getVehicleSilhouette } from '../vehicle-silhouettes'
 import styles from './SharedVehicle.module.css'
 
-const CAT = {
-  Maintenance: { bg: '#dcfce7', color: '#166534', border: '#86efac' },
-  Upgrade:     { bg: '#ede9fe', color: '#5b21b6', border: '#c4b5fd' },
-  Insurance:   { bg: '#fef3c7', color: '#92400e', border: '#fde68a' },
-}
-
 function usePageMeta(title, description) {
   useEffect(() => {
     if (!title) return
@@ -36,8 +30,44 @@ function usePageMeta(title, description) {
   }, [title, description])
 }
 
-function fmt(n) {
-  return '$' + Math.round(n || 0).toLocaleString()
+function fmtMonth(dateStr) {
+  if (!dateStr) return null
+  return new Date(dateStr + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
+}
+
+function RecallStatus({ make, model, year }) {
+  const [count, setCount] = useState(null)
+
+  useEffect(() => {
+    const url = `https://api.nhtsa.gov/recalls/recallsByVehicle?make=${encodeURIComponent(make)}&model=${encodeURIComponent(model)}&modelYear=${encodeURIComponent(year)}`
+    fetch(url)
+      .then(res => {
+        if (res.status === 400) { setCount(0); return null }
+        if (!res.ok) { setCount(-1); return null }
+        return res.json()
+      })
+      .then(data => { if (data) setCount(data.results?.length || 0) })
+      .catch(() => setCount(-1))
+  }, [make, model, year])
+
+  if (count === null || count === -1) return null
+
+  return (
+    <section className={styles.section}>
+      <h2 className={styles.sectionHeading}>Recall Status</h2>
+      {count === 0 ? (
+        <div className={styles.recallGood}>
+          <span className={styles.recallIcon}>✓</span>
+          No open recalls on file for this vehicle
+        </div>
+      ) : (
+        <div className={styles.recallWarn}>
+          <span className={styles.recallIcon}>⚠</span>
+          {count} open recall{count !== 1 ? 's' : ''} — contact your dealer
+        </div>
+      )}
+    </section>
+  )
 }
 
 export default function SharedVehicle() {
@@ -62,7 +92,7 @@ export default function SharedVehicle() {
     : null
   usePageMeta(
     vehicleName ? `${vehicleName} | Garage AI` : 'Garage AI',
-    vehicleName ? `Full service history for this ${vehicleName} — tracked on Garage AI.` : ''
+    vehicleName ? `Verified service history for this ${vehicleName} — tracked on Garage AI.` : ''
   )
 
   if (loading) return (
@@ -82,27 +112,34 @@ export default function SharedVehicle() {
   )
 
   const records = vehicle.records || []
-  const sorted = [...records].sort((a, b) => new Date(b.date) - new Date(a.date))
-  const upgrades = sorted.filter(r => r.category === 'Upgrade')
+  const mods = vehicle.mods || []
 
   const latestMileage = [...records]
     .filter(r => r.date && r.mileage > 0)
     .sort((a, b) => new Date(b.date) - new Date(a.date))[0]?.mileage || vehicle.mileage || 0
 
-  const oldest = [...records].filter(r => r.date).sort((a, b) => new Date(a.date) - new Date(b.date))[0]
-  const yearsTracked = oldest
-    ? Math.max(1, Math.round((Date.now() - new Date(oldest.date)) / (365.25 * 864e5)))
-    : null
+  const datedRecords = records.filter(r => r.date).sort((a, b) => new Date(a.date) - new Date(b.date))
+  const firstRecord = datedRecords[0]
+  const lastRecord = datedRecords[datedRecords.length - 1]
+
+  const categories = [...new Set(records.map(r => r.category || 'Maintenance'))].sort()
 
   const stats = [
+    latestMileage > 0 ? { label: 'Mileage', value: Math.round(latestMileage).toLocaleString() + ' mi' } : null,
     { label: 'Service records', value: records.length },
-    { label: 'Current mileage', value: Math.round(latestMileage / 1000) + 'k mi' },
-    yearsTracked ? { label: 'Years tracked', value: yearsTracked + (yearsTracked === 1 ? ' yr' : ' yrs') } : null,
+    mods.length > 0 ? { label: 'Modifications', value: mods.length } : null,
   ].filter(Boolean)
+
+  const dateRange = (() => {
+    const first = fmtMonth(firstRecord?.date)
+    const last = fmtMonth(lastRecord?.date)
+    if (!first) return null
+    if (first === last) return first
+    return `${first} – ${last}`
+  })()
 
   return (
     <div className={styles.page}>
-      {/* Nav */}
       <nav className={styles.nav}>
         <Link to="/" className={styles.navLogo}>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
@@ -115,7 +152,7 @@ export default function SharedVehicle() {
       </nav>
 
       <div className={styles.container}>
-        {/* Hero */}
+        {/* Vehicle header */}
         <div className={styles.hero}>
           <div
             className={styles.silhouette}
@@ -132,65 +169,49 @@ export default function SharedVehicle() {
           )}
         </div>
 
-        {/* Stats */}
-        <div className={styles.statsGrid}>
-          {stats.map(s => (
-            <div key={s.label} className={styles.statCard}>
-              <div className={styles.statValue}>{s.value}</div>
-              <div className={styles.statLabel}>{s.label}</div>
-            </div>
-          ))}
+        {/* CTA — second thing a viewer sees */}
+        <div className={styles.ctaBanner}>
+          <p className={styles.ctaBannerText}>Know your car better than anyone.</p>
+          <Link to="/" className={styles.ctaBannerBtn}>Start tracking free →</Link>
         </div>
 
-        {/* Service history */}
-        {sorted.length > 0 && (
+        {/* Stats */}
+        {stats.length > 0 && (
+          <div className={styles.statsGrid}>
+            {stats.map(s => (
+              <div key={s.label} className={styles.statCard}>
+                <div className={styles.statValue}>{s.value}</div>
+                <div className={styles.statLabel}>{s.label}</div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Service summary — no line items */}
+        {records.length > 0 && (
           <section className={styles.section}>
             <h2 className={styles.sectionHeading}>Service History</h2>
-            <div className={styles.timeline}>
-              {sorted.map((r, i) => {
-                const cat = r.category || 'Maintenance'
-                const c = CAT[cat] || CAT.Maintenance
-                return (
-                  <div key={r.id || i} className={styles.timelineRow}>
-                    <div className={styles.timelineLeft}>
-                      <div className={styles.recDate}>{r.date}</div>
-                      <div className={styles.recService}>{r.service}</div>
-                      {r.shop && <div className={styles.recShop}>{r.shop}</div>}
-                    </div>
-                    <div className={styles.timelineRight}>
-                      <span className={styles.catBadge} style={{ background: c.bg, color: c.color, borderColor: c.border }}>
-                        {cat}
-                      </span>
-                    </div>
-                  </div>
-                )
-              })}
+            <div className={styles.summaryCount}>
+              {records.length} service{records.length !== 1 ? 's' : ''} recorded
             </div>
+            {dateRange && (
+              <div className={styles.summaryRange}>{dateRange}</div>
+            )}
+            {categories.length > 0 && (
+              <div className={styles.categoryRow}>
+                {categories.map(cat => (
+                  <span key={cat} className={`${styles.categoryPill} ${styles['cat' + cat]}`}>{cat}</span>
+                ))}
+              </div>
+            )}
+            <p className={styles.privateNote}>Full records available to owner</p>
           </section>
         )}
 
-        {/* Upgrades */}
-        {upgrades.length > 0 && (
-          <section className={styles.section}>
-            <h2 className={styles.sectionHeading}>Upgrades & Modifications</h2>
-            <div className={styles.upgradeGrid}>
-              {upgrades.map((r, i) => (
-                <div key={r.id || i} className={styles.upgradeCard}>
-                  <div className={styles.upgradeName}>{r.service}</div>
-                  {r.date && <div className={styles.upgradeDate}>{r.date}</div>}
-                </div>
-              ))}
-            </div>
-          </section>
+        {/* Recall status */}
+        {vehicle.make && vehicle.model && vehicle.year && (
+          <RecallStatus make={vehicle.make} model={vehicle.model} year={vehicle.year} />
         )}
-
-        {/* CTA */}
-        <div className={styles.cta}>
-          <h2 className={styles.ctaHeadline}>Know your car better than anyone.</h2>
-          <p className={styles.ctaBody}>Track service history, costs, and mileage — free.</p>
-          <Link to="/" className={styles.ctaBtn}>Start Tracking Free</Link>
-          <p className={styles.ctaDomain}>garage-ai-silk.vercel.app</p>
-        </div>
       </div>
     </div>
   )
