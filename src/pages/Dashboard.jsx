@@ -144,6 +144,11 @@ function OverviewTab({ vehicle, updateVehicle }) {
   const total = records.reduce((s, r) => s + (r.cost || 0), 0)
   const verified = records.filter(r => r.verified).length
 
+  const sortedRecords = [...records].filter(r => r.date).sort((a, b) => new Date(b.date) - new Date(a.date))
+  const latestRecord = sortedRecords[0]
+  const displayMileage = latestRecord?.mileage || vehicle.mileage || 0
+  const mileageDate = latestRecord?.date || null
+
   const byService = {}
   records.forEach(r => { byService[r.service] = (byService[r.service] || 0) + r.cost })
   const spending = Object.entries(byService).sort((a, b) => b[1] - a[1])
@@ -155,9 +160,12 @@ function OverviewTab({ vehicle, updateVehicle }) {
 
   return (
     <div className={styles.overviewGrid}>
+      <div className={styles.overviewSilhouette}>
+        <VehicleSilhouette bodyClass={vehicle.bodyClass} />
+      </div>
       <div className={styles.statsRow}>
         {[
-          { label: 'Mileage', value: (vehicle.mileage || 0).toLocaleString() + ' mi', icon: 'road' },
+          { label: 'Mileage', value: displayMileage.toLocaleString() + ' mi', icon: 'road', sub: mileageDate },
           { label: 'Total spent', value: '$' + total.toFixed(0), icon: 'coin' },
           { label: 'Records', value: records.length, icon: 'file-text' },
           { label: 'Verified', value: verified, icon: 'circle-check' },
@@ -165,6 +173,7 @@ function OverviewTab({ vehicle, updateVehicle }) {
           <div key={s.label} className={styles.statCard}>
             <div className={styles.statLabel}><i className={`ti ti-${s.icon}`} /> {s.label}</div>
             <div className={styles.statValue}>{s.value}</div>
+            {s.sub && <div className={styles.statSub}>{s.sub}</div>}
           </div>
         ))}
       </div>
@@ -526,6 +535,11 @@ function ScanReceiptTab({ vehicle, updateVehicle }) {
   const [saved, setSaved] = useState(false)
   const fileInputRef = useRef(null)
 
+  function resetScanner() {
+    setFile(null); setText(''); setResult(null); setSaved(false)
+    if (fileInputRef.current) fileInputRef.current.value = ''
+  }
+
   const ALLOWED = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'application/pdf']
 
   async function loadFile(f) {
@@ -659,12 +673,17 @@ function ScanReceiptTab({ vehicle, updateVehicle }) {
               <div key={k}><span className={styles.label}>{k}</span><div style={{ fontSize: 14 }}>{v}</div></div>
             ))}
           </div>
-          {saved
-            ? <Badge color="teal">✓ Saved to service history</Badge>
-            : <Btn variant="primary" size="sm" onClick={saveRecord} style={{ marginTop: 12 }}>
-                <i className="ti ti-plus" /> Add to service history
-              </Btn>
-          }
+          <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap', alignItems: 'center' }}>
+            {saved
+              ? <Badge color="teal">✓ Saved to service history</Badge>
+              : <Btn variant="primary" size="sm" onClick={saveRecord}>
+                  <i className="ti ti-plus" /> Add to service history
+                </Btn>
+            }
+            <Btn size="sm" onClick={resetScanner}>
+              <i className="ti ti-refresh" /> Analyze another
+            </Btn>
+          </div>
         </Card>
       )}
       {result?.error && <p style={{ color: '#993C1D', fontSize: 13, marginTop: 10 }}>{result.error}</p>}

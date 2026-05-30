@@ -146,6 +146,22 @@
 /* ── Overview ── */
 .overviewGrid { display: flex; flex-direction: column; gap: 1.25rem; }
 
+.overviewSilhouette {
+  display: flex;
+  justify-content: center;
+  padding: 0.25rem 0;
+}
+.overviewSilhouette > * {
+  width: 180px;
+  color: var(--border-mid);
+}
+
+.statSub {
+  font-size: 11px;
+  color: var(--text3);
+  margin-top: 3px;
+}
+
 .statsRow {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
