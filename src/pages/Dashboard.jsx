@@ -139,9 +139,6 @@ export default function Dashboard() {
                 <Btn size="sm" onClick={handleShare} disabled={sharing}>
                   {sharing ? <><i className="ti ti-loader-2" style={{ animation: 'spin 1s linear infinite' }} /> Sharing…</> : shareCopied ? <><i className="ti ti-check" /> Copied!</> : <><i className="ti ti-share" /> Share</>}
                 </Btn>
-                <Btn variant="danger" size="sm" onClick={() => { if (confirm('Remove this vehicle?')) deleteVehicle(vehicle.id) }}>
-                  <i className="ti ti-trash" /> Remove
-                </Btn>
               </div>
             </div>
 
@@ -154,7 +151,7 @@ export default function Dashboard() {
 
             {/* Tab content */}
             <div className={styles.tabContent}>
-              {tab === 'Overview' && <OverviewTab vehicle={vehicle} updateVehicle={updateVehicle} />}
+              {tab === 'Overview' && <OverviewTab vehicle={vehicle} updateVehicle={updateVehicle} deleteVehicle={deleteVehicle} />}
               {tab === 'Service History' && <ServiceHistoryTab vehicle={vehicle} updateVehicle={updateVehicle} />}
               {tab === 'Costs' && <CostsTab vehicle={vehicle} />}
               {tab === 'Mileage' && <MileageTab vehicle={vehicle} />}
@@ -193,7 +190,7 @@ function VehicleListItem({ vehicle, selected, onClick }) {
 }
 
 /* ── OVERVIEW TAB ─────────────────────────────────────────── */
-function OverviewTab({ vehicle, updateVehicle }) {
+function OverviewTab({ vehicle, updateVehicle, deleteVehicle }) {
   const records = vehicle.records || []
   const reminders = vehicle.reminders || []
   const total = records.reduce((s, r) => s + (r.cost || 0), 0)
@@ -266,6 +263,12 @@ function OverviewTab({ vehicle, updateVehicle }) {
             </div>
           )}
         </Card>
+      </div>
+
+      <div style={{ textAlign: 'center', paddingTop: '0.5rem' }}>
+        <button className={styles.removeVehicleLink} onClick={() => { if (confirm('Remove this vehicle?')) deleteVehicle(vehicle.id) }}>
+          Remove vehicle
+        </button>
       </div>
 
     </div>
