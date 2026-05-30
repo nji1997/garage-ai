@@ -85,10 +85,6 @@ export default function SharedVehicle() {
   const sorted = [...records].sort((a, b) => new Date(b.date) - new Date(a.date))
   const upgrades = sorted.filter(r => r.category === 'Upgrade')
 
-  const maintenanceSpend = records
-    .filter(r => r.category !== 'Insurance')
-    .reduce((s, r) => s + (r.cost || 0), 0)
-
   const latestMileage = [...records]
     .filter(r => r.date && r.mileage > 0)
     .sort((a, b) => new Date(b.date) - new Date(a.date))[0]?.mileage || vehicle.mileage || 0
@@ -100,7 +96,6 @@ export default function SharedVehicle() {
 
   const stats = [
     { label: 'Service records', value: records.length },
-    { label: 'Total spent', value: fmt(maintenanceSpend) },
     { label: 'Current mileage', value: Math.round(latestMileage / 1000) + 'k mi' },
     yearsTracked ? { label: 'Years tracked', value: yearsTracked + (yearsTracked === 1 ? ' yr' : ' yrs') } : null,
   ].filter(Boolean)
@@ -166,7 +161,6 @@ export default function SharedVehicle() {
                       <span className={styles.catBadge} style={{ background: c.bg, color: c.color, borderColor: c.border }}>
                         {cat}
                       </span>
-                      <div className={styles.recCost}>{fmt(r.cost)}</div>
                     </div>
                   </div>
                 )
@@ -184,7 +178,6 @@ export default function SharedVehicle() {
                 <div key={r.id || i} className={styles.upgradeCard}>
                   <div className={styles.upgradeName}>{r.service}</div>
                   {r.date && <div className={styles.upgradeDate}>{r.date}</div>}
-                  <div className={styles.upgradeCost}>{fmt(r.cost)}</div>
                 </div>
               ))}
             </div>
