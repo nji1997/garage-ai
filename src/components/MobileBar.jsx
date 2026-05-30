@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import VinLookup from './VinLookup'
 import { Badge } from './UI'
+import { getVehicleSilhouette } from '../vehicle-silhouettes'
 import styles from './MobileBar.module.css'
 
 export default function MobileBar({ vehicles, vehicle, selectedId, setSelectedId, addVehicle, setTab }) {
@@ -51,19 +52,28 @@ export default function MobileBar({ vehicles, vehicle, selectedId, setSelectedId
                   <p className={styles.sheetEmpty}>No vehicles yet. Tap + to add one.</p>
                 )}
                 {vehicles.map(v => {
-                  const urgent = (v.reminders || []).filter(r => r.priority === 'high').length
+                  const records = v.records || []
+                  const latestMileage = [...records]
+                    .filter(r => r.date && r.mileage > 0)
+                    .sort((a, b) => new Date(b.date) - new Date(a.date))[0]?.mileage || v.mileage || 0
+                  const mileageLabel = Math.round(latestMileage / 1000) + 'k mi'
                   return (
                     <button
                       key={v.id}
                       className={`${styles.vehicleOption} ${v.id === selectedId ? styles.vehicleOptionActive : ''}`}
                       onClick={() => switchVehicle(v.id)}
                     >
-                      <div className={styles.vehicleOptionName}>
-                        {v.year} {v.make} {v.model} {v.trim}
-                      </div>
-                      <div className={styles.vehicleOptionMeta}>
-                        {(v.mileage || 0).toLocaleString()} mi · {(v.records || []).length} records
-                        {urgent > 0 && <Badge color="coral" style={{ marginLeft: 6 }}>{urgent} due</Badge>}
+                      <div
+                        className={styles.vehicleOptionSilhouette}
+                        dangerouslySetInnerHTML={{ __html: getVehicleSilhouette(v.bodyClass) }}
+                      />
+                      <div className={styles.vehicleOptionInfo}>
+                        <div className={styles.vehicleOptionName}>
+                          {v.year} {v.make} {v.model} {v.trim}
+                        </div>
+                        <div className={styles.vehicleOptionMeta}>
+                          {mileageLabel} · {records.length} records
+                        </div>
                       </div>
                     </button>
                   )
