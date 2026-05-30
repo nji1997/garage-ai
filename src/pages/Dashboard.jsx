@@ -12,7 +12,7 @@ import { doc, setDoc } from 'firebase/firestore'
 import { db } from '../firebase'
 import { ComposedChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts'
 
-const TABS = ['Overview', 'Service History', 'Costs', 'Mileage', 'AI Advisor', 'Sell Vehicle']
+const TABS = ['Overview', 'Service History', 'Costs', 'Mileage', 'Recalls', 'AI Advisor', 'Sell Vehicle']
 
 const CAT_COLOR = { Maintenance: 'teal', Upgrade: 'purple', Insurance: 'amber' }
 
@@ -161,6 +161,7 @@ export default function Dashboard() {
               {tab === 'Service History' && <ServiceHistoryTab vehicle={vehicle} updateVehicle={updateVehicle} />}
               {tab === 'Costs' && <CostsTab vehicle={vehicle} />}
               {tab === 'Mileage' && <MileageTab vehicle={vehicle} />}
+              {tab === 'Recalls' && <RecallsTab vehicle={vehicle} />}
               {tab === 'AI Advisor' && <AIAdvisorTab vehicle={vehicle} />}
 
               {tab === 'Sell Vehicle' && <SellTab vehicle={vehicle} updateVehicle={updateVehicle} />}
@@ -746,6 +747,92 @@ function MileageTab({ vehicle }) {
           <span><span className={styles.legendBar} style={{ background: '#B3B0E8' }} />Estimated</span>
         </div>
       </Card>
+    </div>
+  )
+}
+
+/* ── RECALLS TAB ─────────────────────────────────────────── */
+function RecallsTab({ vehicle }) {
+  const [recalls, setRecalls] = useState(null)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+
+  useEffect(() => {
+    async function fetchRecalls() {
+      setLoading(true)
+      setError('')
+      try {
+        const { make, model, year } = vehicle
+        const url = `https://api.nhtsa.gov/recalls/recallsByVehicle?make=${encodeURIComponent(make)}&model=${encodeURIComponent(model)}&modelYear=${encodeURIComponent(year)}`
+        const res = await fetch(url)
+        if (!res.ok) throw new Error(`HTTP ${res.status}`)
+        const data = await res.json()
+        setRecalls(data.results || [])
+      } catch {
+        setError('Could not load recall data — check your connection and try again.')
+      }
+      setLoading(false)
+    }
+    fetchRecalls()
+  }, [vehicle.id])
+
+  function parseDate(raw) {
+    if (!raw) return ''
+    const match = raw.match(/\/Date\((\d+)\)\//)
+    if (match) {
+      return new Date(parseInt(match[1])).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
+    }
+    return raw
+  }
+
+  if (loading) return <div className={styles.center}><Spinner /></div>
+
+  if (error) {
+    return (
+      <EmptyState icon="alert-triangle" title="Could not load recalls" subtitle={error} />
+    )
+  }
+
+  if (recalls === null) return null
+
+  if (recalls.length === 0) {
+    return (
+      <EmptyState
+        icon="circle-check"
+        title="No open recalls found"
+        subtitle={`No NHTSA recalls on file for your ${vehicle.year} ${vehicle.make} ${vehicle.model}.`}
+      />
+    )
+  }
+
+  return (
+    <div>
+      <SectionHeader title={`${recalls.length} recall${recalls.length !== 1 ? 's' : ''} found`} />
+      <p className={styles.muted} style={{ marginBottom: '1.25rem', fontSize: 13 }}>
+        Source: NHTSA recall database. Contact your dealer to verify open status.
+      </p>
+      <div className={styles.recallList}>
+        {recalls.map((r, i) => (
+          <Card key={r.NHTSACampaignNumber || i} className={styles.recallCard}>
+            <div className={styles.recallHeader}>
+              <span className={styles.recallComponent}><i className="ti ti-tool" /> {r.Component}</span>
+              <Badge color="coral">{r.NHTSACampaignNumber}</Badge>
+            </div>
+            {r.ReportReceivedDate && (
+              <div className={styles.recallDate}>{parseDate(r.ReportReceivedDate)}</div>
+            )}
+            {r.Defect && (
+              <p className={styles.recallText}><strong>Defect:</strong> {r.Defect}</p>
+            )}
+            {r.Consequence && (
+              <p className={styles.recallText}><strong>Consequence:</strong> {r.Consequence}</p>
+            )}
+            {r.Remedy && (
+              <p className={styles.recallText}><strong>Remedy:</strong> {r.Remedy}</p>
+            )}
+          </Card>
+        ))}
+      </div>
     </div>
   )
 }
