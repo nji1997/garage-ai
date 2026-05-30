@@ -5,6 +5,7 @@ import { Btn, Card, Badge, Spinner, EmptyState, SectionHeader } from '../compone
 import VinLookup from '../components/VinLookup'
 import styles from './Dashboard.module.css'
 import { callClaude, callClaudeWithFile } from '../lib/claude'
+import MobileBar from '../components/MobileBar'
 
 const TABS = ['Overview', 'Service History', 'Reminders', 'Modifications', 'AI Advisor', 'Scan Receipt', 'Sell Vehicle']
 
@@ -61,6 +62,15 @@ export default function Dashboard() {
           ))}
         </div>
       </aside>
+
+      <MobileBar
+        vehicles={vehicles}
+        vehicle={vehicle}
+        selectedId={selectedId}
+        setSelectedId={setSelectedId}
+        addVehicle={addVehicle}
+        setTab={setTab}
+      />
 
       {/* Main content */}
       <main className={styles.main}>

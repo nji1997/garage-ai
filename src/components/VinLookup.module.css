@@ -1,3 +1,27 @@
+.scanBtn {
+  width: 100%;
+  justify-content: center;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+.divider {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 10px 0;
+  color: var(--text3);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.divider::before, .divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
 .inputRow {
   display: flex;
   gap: 8px;

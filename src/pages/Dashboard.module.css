@@ -370,7 +370,7 @@
 @media (max-width: 768px) {
   .layout { grid-template-columns: 1fr; }
   .sidebar { display: none; }
-  .main { padding: 1rem; }
+  .main { padding: 1rem; padding-bottom: 76px; }
   .overviewCols { grid-template-columns: 1fr; }
   .formGrid { grid-template-columns: 1fr; }
   .vehicleName { font-size: 18px; }
