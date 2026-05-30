@@ -12,7 +12,7 @@ import { doc, setDoc } from 'firebase/firestore'
 import { db } from '../firebase'
 import { ComposedChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts'
 
-const TABS = ['Overview', 'Service History', 'Costs', 'Mileage', 'AI Advisor', 'Scan Receipt', 'Sell Vehicle']
+const TABS = ['Overview', 'Service History', 'Costs', 'Mileage', 'AI Advisor', 'Sell Vehicle']
 
 const CAT_COLOR = { Maintenance: 'teal', Upgrade: 'purple', Insurance: 'amber' }
 
@@ -157,7 +157,7 @@ export default function Dashboard() {
               {tab === 'Costs' && <CostsTab vehicle={vehicle} />}
               {tab === 'Mileage' && <MileageTab vehicle={vehicle} />}
               {tab === 'AI Advisor' && <AIAdvisorTab vehicle={vehicle} />}
-              {tab === 'Scan Receipt' && <ScanReceiptTab vehicle={vehicle} updateVehicle={updateVehicle} />}
+
               {tab === 'Sell Vehicle' && <SellTab vehicle={vehicle} updateVehicle={updateVehicle} />}
             </div>
           </>
@@ -783,172 +783,6 @@ function AIAdvisorTab({ vehicle }) {
 }
 
 /* ── SCAN RECEIPT TAB ─────────────────────────────────────── */
-const RECEIPT_SYSTEM = 'You are a service receipt parser. Extract structured data from the receipt and respond ONLY with valid JSON (no markdown, no extra text): {"shop":"","date":"YYYY-MM-DD","service":"","parts":"","labor":0,"total":0,"mileage":0,"notes":""}'
-
-function ScanReceiptTab({ vehicle, updateVehicle }) {
-  const [file, setFile] = useState(null)
-  const [text, setText] = useState('')
-  const [dragOver, setDragOver] = useState(false)
-  const [loading, setLoading] = useState(false)
-  const [result, setResult] = useState(null)
-  const [saved, setSaved] = useState(false)
-  const fileInputRef = useRef(null)
-
-  function resetScanner() {
-    setFile(null); setText(''); setResult(null); setSaved(false)
-    if (fileInputRef.current) fileInputRef.current.value = ''
-  }
-
-  const ALLOWED = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'application/pdf']
-
-  async function loadFile(f) {
-    if (!f) return
-    if (!ALLOWED.includes(f.type)) {
-      alert('Please upload a PDF or image file (JPEG, PNG, WebP)')
-      return
-    }
-    try {
-      if (f.type === 'application/pdf') {
-        const reader = new FileReader()
-        reader.onload = e => {
-          setFile({ name: f.name, base64: e.target.result.split(',')[1], mediaType: f.type })
-          setResult(null); setSaved(false)
-        }
-        reader.readAsDataURL(f)
-      } else {
-        const base64 = await compressImage(f)
-        setFile({ name: f.name, base64, mediaType: 'image/jpeg' })
-        setResult(null); setSaved(false)
-      }
-    } catch {
-      alert('Could not load file. Please try again.')
-    }
-  }
-
-  function clearFile(e) {
-    e.stopPropagation()
-    setFile(null); setResult(null); setSaved(false)
-    if (fileInputRef.current) fileInputRef.current.value = ''
-  }
-
-  function onDrop(e) {
-    e.preventDefault(); setDragOver(false)
-    loadFile(e.dataTransfer.files[0])
-  }
-
-  async function analyze() {
-    setLoading(true); setResult(null); setSaved(false)
-    try {
-      let reply
-      if (file) {
-        reply = await callClaudeWithFile(RECEIPT_SYSTEM, 'Extract all service data from this receipt.', file.base64, file.mediaType)
-      } else {
-        reply = await callClaude(RECEIPT_SYSTEM, text)
-      }
-      setResult(JSON.parse(reply.replace(/```json|```/g, '').trim()))
-    } catch {
-      setResult({ error: 'Could not parse — try a clearer image or paste the text instead.' })
-    }
-    setLoading(false)
-  }
-
-  function saveRecord() {
-    if (!result || result.error) return
-    const rec = {
-      id: 'r' + Date.now(), date: result.date || '', shop: result.shop || '',
-      service: result.service || 'Service', cost: parseFloat(result.total) || 0,
-      mileage: parseInt(result.mileage) || vehicle.mileage || 0,
-      notes: result.notes || '', verified: false,
-    }
-    updateVehicle(vehicle.id, { records: [...(vehicle.records || []), rec] })
-    setSaved(true)
-  }
-
-  return (
-    <div>
-      <SectionHeader title="AI receipt scanner" />
-      <p className={styles.muted} style={{ marginBottom: '1rem' }}>
-        Upload a photo or PDF of any service receipt — AI extracts all the details automatically.
-      </p>
-
-      <div
-        className={`${styles.dropZone} ${dragOver ? styles.dropZoneActive : ''} ${file ? styles.dropZoneHasFile : ''}`}
-        onDragOver={e => { e.preventDefault(); setDragOver(true) }}
-        onDragLeave={() => setDragOver(false)}
-        onDrop={onDrop}
-        onClick={() => fileInputRef.current?.click()}
-      >
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/jpeg,image/png,image/webp,application/pdf"
-          style={{ display: 'none' }}
-          onChange={e => loadFile(e.target.files[0])}
-        />
-        {file ? (
-          <div className={styles.fileInfo}>
-            <i className="ti ti-file-check" style={{ color: 'var(--teal)', fontSize: 20 }} />
-            <span>{file.name}</span>
-            <button className={styles.removeBtn} onClick={clearFile}><i className="ti ti-x" /></button>
-          </div>
-        ) : (
-          <div className={styles.dropZoneContent}>
-            <i className="ti ti-cloud-upload" style={{ fontSize: 28, color: 'var(--purple-mid)' }} />
-            <div>
-              <div style={{ fontWeight: 500, fontSize: 14 }}>Drop a receipt here</div>
-              <div className={styles.muted} style={{ fontSize: 12, marginTop: 2 }}>
-                or click to browse — PDF, JPEG, PNG, WebP
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {!file && (
-        <div style={{ marginTop: '1rem' }}>
-          <label className={styles.label} style={{ marginBottom: 6 }}>Or paste receipt text</label>
-          <textarea
-            rows={4}
-            value={text}
-            onChange={e => setText(e.target.value)}
-            placeholder="e.g. Jiffy Lube - Oil Change $67.99, Total: $85.99, Mileage: 34,500, Date: Nov 15 2024"
-          />
-        </div>
-      )}
-
-      <div style={{ marginTop: 12 }}>
-        <Btn variant="primary" onClick={analyze} disabled={loading || (!file && !text.trim())}>
-          {loading ? 'Analyzing…' : <><i className="ti ti-sparkles" /> Analyze Receipt</>}
-        </Btn>
-      </div>
-
-      {result && !result.error && (
-        <Card className={styles.receiptResult}>
-          <div className={styles.formGrid}>
-            {[
-              ['Shop', result.shop], ['Date', result.date], ['Service', result.service],
-              ['Total', result.total ? '$' + result.total : ''], ['Mileage', result.mileage ? result.mileage.toLocaleString() + ' mi' : ''], ['Notes', result.notes],
-            ].filter(([, v]) => v).map(([k, v]) => (
-              <div key={k}><span className={styles.label}>{k}</span><div style={{ fontSize: 14 }}>{v}</div></div>
-            ))}
-          </div>
-          <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap', alignItems: 'center' }}>
-            {saved
-              ? <Badge color="teal">✓ Saved to service history</Badge>
-              : <Btn variant="primary" size="sm" onClick={saveRecord}>
-                  <i className="ti ti-plus" /> Add to service history
-                </Btn>
-            }
-            <Btn size="sm" onClick={resetScanner}>
-              <i className="ti ti-refresh" /> Analyze another
-            </Btn>
-          </div>
-        </Card>
-      )}
-      {result?.error && <p style={{ color: '#993C1D', fontSize: 13, marginTop: 10 }}>{result.error}</p>}
-    </div>
-  )
-}
 
 /* ── SELL VEHICLE TAB ─────────────────────────────────────── */
 function SellTab({ vehicle }) {
