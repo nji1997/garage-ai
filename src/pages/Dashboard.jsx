@@ -7,7 +7,7 @@ import styles from './Dashboard.module.css'
 import { callClaude, callClaudeWithFile } from '../lib/claude'
 import { compressImage } from '../lib/image'
 import MobileBar from '../components/MobileBar'
-import VehicleSilhouette from '../components/VehicleSilhouette'
+import { getVehicleSilhouette } from '../vehicle-silhouettes'
 import { doc, setDoc } from 'firebase/firestore'
 import { db } from '../firebase'
 import { ComposedChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts'
@@ -15,6 +15,15 @@ import { ComposedChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Toolti
 const TABS = ['Overview', 'Service History', 'Costs', 'Mileage', 'AI Advisor', 'Scan Receipt', 'Sell Vehicle']
 
 const CAT_COLOR = { Maintenance: 'teal', Upgrade: 'purple', Insurance: 'amber' }
+
+function VehicleImage({ bodyClass, height = 180, width = '100%', style = {} }) {
+  return (
+    <div
+      style={{ background: '#1e293b', borderRadius: 10, height, width, overflow: 'hidden', flexShrink: 0, ...style }}
+      dangerouslySetInnerHTML={{ __html: getVehicleSilhouette(bodyClass) }}
+    />
+  )
+}
 
 export default function Dashboard() {
   const { user } = useAuth()
@@ -121,9 +130,9 @@ export default function Dashboard() {
             <div className={styles.vehicleHeader}>
               <div>
                 <h1 className={styles.vehicleName}>{vehicle.year} {vehicle.make} {vehicle.model} {vehicle.trim}</h1>
-                <p className={styles.vehicleSub}>{vehicle.engine} · {vehicle.transmission} · {(vehicle.mileage || 0).toLocaleString()} mi</p>
+                <p className={styles.vehicleSub}>{vehicle.engine} · {vehicle.transmission}</p>
               </div>
-              <VehicleSilhouette bodyClass={vehicle.bodyClass} className={styles.headerSilhouette} />
+              <VehicleImage bodyClass={vehicle.bodyClass} height={72} width={140} />
               <div style={{ display: 'flex', gap: 6 }}>
                 <Btn size="sm" onClick={handleShare} disabled={sharing}>
                   {sharing ? <><i className="ti ti-loader-2" style={{ animation: 'spin 1s linear infinite' }} /> Sharing…</> : shareCopied ? <><i className="ti ti-check" /> Copied!</> : <><i className="ti ti-share" /> Share</>}
@@ -166,7 +175,7 @@ function VehicleListItem({ vehicle, selected, onClick }) {
     <div className={`${styles.vehicleItem} ${selected ? styles.vehicleItemSelected : ''}`} onClick={onClick}>
       <div className={styles.vehicleItemTop}>
         <div className={styles.vehicleItemName}>{vehicle.year} {vehicle.make} {vehicle.model}</div>
-        <VehicleSilhouette bodyClass={vehicle.bodyClass} className={styles.itemSilhouette} />
+        <VehicleImage bodyClass={vehicle.bodyClass} height={36} width={64} style={{ borderRadius: 6 }} />
       </div>
       <div className={styles.vehicleItemMeta}>
         <span><i className="ti ti-road" /> {(vehicle.mileage || 0).toLocaleString()} mi</span>
@@ -201,9 +210,7 @@ function OverviewTab({ vehicle, updateVehicle }) {
 
   return (
     <div className={styles.overviewGrid}>
-      <div className={styles.overviewSilhouette}>
-        <VehicleSilhouette bodyClass={vehicle.bodyClass} />
-      </div>
+      <VehicleImage bodyClass={vehicle.bodyClass} height={180} />
       <div className={styles.statsRow}>
         {[
           { label: 'Mileage', value: displayMileage.toLocaleString() + ' mi', icon: 'road', sub: mileageDate },

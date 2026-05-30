@@ -56,12 +56,6 @@
   font-weight: 500;
 }
 
-.itemSilhouette {
-  width: 52px;
-  color: var(--purple-mid);
-  opacity: 0.5;
-  flex-shrink: 0;
-}
 
 .vehicleItemMeta {
   display: flex;
@@ -94,12 +88,7 @@
   margin-bottom: 1.25rem;
 }
 
-.headerSilhouette {
-  width: 120px;
-  color: var(--border-mid);
-  flex-shrink: 0;
-}
-@media (max-width: 520px) { .headerSilhouette { display: none; } }
+@media (max-width: 520px) { .vehicleHeader > div:nth-child(2) { display: none; } }
 
 .vehicleName {
   font-size: 22px;
@@ -146,17 +135,6 @@
 /* ── Overview ── */
 .overviewGrid { display: flex; flex-direction: column; gap: 1.25rem; }
 
-.overviewSilhouette {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: 1.5rem 0 0.5rem;
-}
-.overviewSilhouette > * {
-  width: 260px;
-  color: var(--text);
-  opacity: 0.15;
-}
 
 .statSub {
   font-size: 11px;
