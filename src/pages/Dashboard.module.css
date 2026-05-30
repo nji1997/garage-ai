@@ -253,6 +253,28 @@
 }
 
 /* ── Category selector ── */
+.filterBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+
+.filterRight { display: flex; gap: 8px; align-items: center; flex-shrink: 0; }
+
+.filterSelect {
+  font-size: 12px;
+  padding: 5px 10px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--border-mid);
+  background: var(--surface);
+  color: var(--text2);
+  cursor: pointer;
+  height: auto;
+}
+
 .catBtnRow { display: flex; gap: 6px; flex-wrap: wrap; }
 .catBtn {
   padding: 5px 14px;
@@ -265,6 +287,7 @@
   transition: all 0.12s;
 }
 .catBtn:hover { border-color: var(--purple); color: var(--purple); }
+.catBtnAll { background: var(--surface2); border-color: var(--border-mid); color: var(--text); font-weight: 500; }
 .catBtn-Maintenance { background: var(--teal-light); border-color: var(--teal); color: #0a6b52; font-weight: 500; }
 .catBtn-Upgrade { background: var(--purple-light); border-color: var(--purple); color: var(--purple); font-weight: 500; }
 .catBtn-Insurance { background: var(--amber-light); border-color: var(--amber); color: #8a5c00; font-weight: 500; }

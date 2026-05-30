@@ -272,15 +272,29 @@ function OverviewTab({ vehicle, updateVehicle }) {
 
 /* ── SERVICE HISTORY TAB ──────────────────────────────────── */
 const BLANK_FORM = { service: '', shop: '', date: '', mileage: '', cost: '', notes: '', verified: false, category: 'Maintenance' }
+const RECEIPT_SYSTEM = 'You are a service receipt parser. Extract structured data from the receipt and respond ONLY with valid JSON (no markdown, no extra text): {"shop":"","date":"YYYY-MM-DD","service":"","parts":"","labor":0,"total":0,"mileage":0,"notes":""}'
 
 function ServiceHistoryTab({ vehicle, updateVehicle }) {
-  const records = [...(vehicle.records || [])].sort((a, b) => new Date(b.date) - new Date(a.date))
+  const allRecords = vehicle.records || []
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState(BLANK_FORM)
   const [scanLoading, setScanLoading] = useState(false)
   const [scanError, setScanError] = useState('')
   const [editingCatId, setEditingCatId] = useState(null)
+  const [filterCat, setFilterCat] = useState('All')
+  const [filterYear, setFilterYear] = useState('All')
+  const [sortBy, setSortBy] = useState('date-desc')
   const photoRef = useRef(null)
+
+  const years = [...new Set(allRecords.filter(r => r.date).map(r => new Date(r.date).getFullYear()))].sort((a, b) => b - a)
+
+  let records = [...allRecords]
+  if (filterCat !== 'All') records = records.filter(r => (r.category || 'Maintenance') === filterCat)
+  if (filterYear !== 'All') records = records.filter(r => r.date && new Date(r.date).getFullYear() === Number(filterYear))
+  if (sortBy === 'date-desc') records.sort((a, b) => new Date(b.date) - new Date(a.date))
+  else if (sortBy === 'date-asc') records.sort((a, b) => new Date(a.date) - new Date(b.date))
+  else if (sortBy === 'cost-desc') records.sort((a, b) => (b.cost || 0) - (a.cost || 0))
+  else if (sortBy === 'cost-asc') records.sort((a, b) => (a.cost || 0) - (b.cost || 0))
 
   function updateCategory(recordId, newCategory) {
     const updated = (vehicle.records || []).map(r =>
@@ -337,7 +351,7 @@ function ServiceHistoryTab({ vehicle, updateVehicle }) {
         onChange={e => { scanReceipt(e.target.files[0]); e.target.value = '' }}
       />
       <SectionHeader
-        title={`${records.length} service records`}
+        title={`${records.length}${records.length !== allRecords.length ? ` of ${allRecords.length}` : ''} service records`}
         action={
           <div style={{ display: 'flex', gap: 6 }}>
             <Btn size="sm" onClick={() => photoRef.current?.click()} disabled={scanLoading}>
@@ -351,6 +365,33 @@ function ServiceHistoryTab({ vehicle, updateVehicle }) {
           </div>
         }
       />
+      {/* Filters */}
+      <div className={styles.filterBar}>
+        <div className={styles.catBtnRow}>
+          {['All', 'Maintenance', 'Upgrade', 'Insurance'].map(c => (
+            <button key={c} type="button"
+              className={`${styles.catBtn} ${filterCat === c ? (c === 'All' ? styles.catBtnAll : styles['catBtn-' + c]) : ''}`}
+              onClick={() => setFilterCat(c)}>
+              {c}
+            </button>
+          ))}
+        </div>
+        <div className={styles.filterRight}>
+          {years.length > 1 && (
+            <select value={filterYear} onChange={e => setFilterYear(e.target.value)} className={styles.filterSelect}>
+              <option value="All">All years</option>
+              {years.map(y => <option key={y} value={y}>{y}</option>)}
+            </select>
+          )}
+          <select value={sortBy} onChange={e => setSortBy(e.target.value)} className={styles.filterSelect}>
+            <option value="date-desc">Newest first</option>
+            <option value="date-asc">Oldest first</option>
+            <option value="cost-desc">Highest cost</option>
+            <option value="cost-asc">Lowest cost</option>
+          </select>
+        </div>
+      </div>
+
       {scanError && (
         <p className={styles.scanError}>{scanError}</p>
       )}
