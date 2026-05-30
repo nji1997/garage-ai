@@ -324,7 +324,16 @@ function ServiceHistoryTab({ vehicle, updateVehicle }) {
   const [form, setForm] = useState(BLANK_FORM)
   const [scanLoading, setScanLoading] = useState(false)
   const [scanError, setScanError] = useState('')
+  const [editingCatId, setEditingCatId] = useState(null)
   const photoRef = useRef(null)
+
+  function updateCategory(recordId, newCategory) {
+    const updated = (vehicle.records || []).map(r =>
+      r.id === recordId ? { ...r, category: newCategory } : r
+    )
+    updateVehicle(vehicle.id, { records: updated })
+    setEditingCatId(null)
+  }
 
   async function scanReceipt(file) {
     if (!file) return
@@ -438,9 +447,27 @@ function ServiceHistoryTab({ vehicle, updateVehicle }) {
                 {r.date && <span>{r.date}</span>}
                 {r.shop && <span>{r.shop}</span>}
                 {r.mileage > 0 && <span>{r.mileage.toLocaleString()} mi</span>}
-                <Badge color={CAT_COLOR[r.category] || 'teal'}>{r.category || 'Maintenance'}</Badge>
+                {editingCatId !== r.id && (
+                  <button className={styles.catBadgeBtn} onClick={() => setEditingCatId(r.id)} title="Edit category">
+                    <Badge color={CAT_COLOR[r.category] || 'teal'}>{r.category || 'Maintenance'}</Badge>
+                  </button>
+                )}
                 <Badge color={r.verified ? 'teal' : 'gray'}>{r.verified ? '✓ Verified' : 'DIY'}</Badge>
               </div>
+              {editingCatId === r.id && (
+                <div className={styles.inlineCatPicker}>
+                  {['Maintenance', 'Upgrade', 'Insurance'].map(cat => (
+                    <button key={cat} type="button"
+                      className={`${styles.catBtn} ${(r.category || 'Maintenance') === cat ? styles['catBtn-' + cat] : ''}`}
+                      onClick={() => updateCategory(r.id, cat)}>
+                      {cat}
+                    </button>
+                  ))}
+                  <button className={styles.removeBtn} onClick={() => setEditingCatId(null)} title="Cancel">
+                    <i className="ti ti-x" />
+                  </button>
+                </div>
+              )}
               {r.notes && <div className={styles.recordNotes}>{r.notes}</div>}
             </div>
             <div className={styles.recordRight}>

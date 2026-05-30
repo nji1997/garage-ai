@@ -317,6 +317,25 @@
 .catBtn-Upgrade { background: var(--purple-light); border-color: var(--purple); color: var(--purple); font-weight: 500; }
 .catBtn-Insurance { background: var(--amber-light); border-color: var(--amber); color: #8a5c00; font-weight: 500; }
 
+.catBadgeBtn {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  display: inline-flex;
+  border-radius: 4px;
+  transition: opacity 0.12s;
+}
+.catBadgeBtn:hover { opacity: 0.75; }
+
+.inlineCatPicker {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  margin-top: 6px;
+  flex-wrap: wrap;
+}
+
 /* ── Costs tab ── */
 .costsWrap { display: flex; flex-direction: column; gap: 1.25rem; }
 
