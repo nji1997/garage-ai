@@ -313,6 +313,44 @@
 .chatInput { display: flex; gap: 8px; }
 .chatInput input { flex: 1; }
 
+/* ── Drop zone ── */
+.dropZone {
+  border: 2px dashed var(--border-mid);
+  border-radius: var(--radius);
+  padding: 1.5rem;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100px;
+  background: var(--surface);
+  user-select: none;
+}
+.dropZone:hover, .dropZoneActive {
+  border-color: var(--purple);
+  background: var(--purple-light);
+}
+.dropZoneHasFile {
+  border-style: solid;
+  border-color: var(--teal);
+  background: var(--teal-light);
+  cursor: default;
+}
+.dropZoneContent {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  pointer-events: none;
+}
+.fileInfo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
 /* ── Receipt / Sell ── */
 .receiptResult { margin-top: 1rem; }
 .sectionLabel { font-size: 13px; color: var(--text2); margin-bottom: 10px; }
