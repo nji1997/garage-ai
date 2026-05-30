@@ -752,6 +752,32 @@ function MileageTab({ vehicle }) {
 }
 
 /* ── RECALLS TAB ─────────────────────────────────────────── */
+
+// NHTSA recall DB uses specific trim names, not marketing series/class names.
+// Confirmed mismatches from 100-vehicle stress test (RECALL_TEST_REPORT.md).
+function normalizeRecallLookup(make, model) {
+  const mk = (make || '').toUpperCase()
+  const md = (model || '').toUpperCase()
+
+  if (mk === 'BMW') {
+    const map = { '3 SERIES': '330I', '4 SERIES': '430I', '5 SERIES': '530I', '6 SERIES': '640I', '7 SERIES': '740I', '8 SERIES': '840I', '2 SERIES': '230I' }
+    if (map[md]) return { make, model: map[md] }
+  }
+
+  if (mk === 'MERCEDES-BENZ') {
+    const map = { 'C-CLASS': 'C300', 'E-CLASS': 'E350', 'S-CLASS': 'S500', 'GLC': 'GLC300', 'GLE': 'GLE350', 'GLS': 'GLS450', 'CLA': 'CLA250', 'GLA': 'GLA250', 'GLB': 'GLB250' }
+    if (map[md]) return { make, model: map[md] }
+  }
+
+  if (mk === 'FORD') {
+    // NHTSA requires "F-250 SD" (space); VIN decoder sometimes returns "F-250SD"
+    const map = { 'F-250SD': 'F-250 SD', 'F-350SD': 'F-350 SD', 'F-450SD': 'F-450 SD', 'F-550SD': 'F-550 SD' }
+    if (map[md]) return { make, model: map[md] }
+  }
+
+  return { make, model }
+}
+
 function RecallsTab({ vehicle }) {
   const [recalls, setRecalls] = useState(null)
   const [loading, setLoading] = useState(false)
@@ -762,7 +788,8 @@ function RecallsTab({ vehicle }) {
       setLoading(true)
       setError('')
       try {
-        const { make, model, year } = vehicle
+        const { make: rawMake, model: rawModel, year } = vehicle
+        const { make, model } = normalizeRecallLookup(rawMake, rawModel)
         const url = `https://api.nhtsa.gov/recalls/recallsByVehicle?make=${encodeURIComponent(make)}&model=${encodeURIComponent(model)}&modelYear=${encodeURIComponent(year)}`
         const res = await fetch(url)
         // NHTSA returns 400 when no recall records exist for this vehicle/year — treat as empty
