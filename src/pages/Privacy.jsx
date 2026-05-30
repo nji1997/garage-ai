@@ -68,14 +68,14 @@ export default function Privacy() {
         <p>
           You can delete your account and all associated data at any time by contacting us
           at{' '}
-          <a href="mailto:irbynick2@gmail.com">irbynick2@gmail.com</a>.
+          <a href="mailto:get.garage.ai@gmail.com">get.garage.ai@gmail.com</a>.
           We will permanently delete your data within 30 days of your request.
         </p>
 
         <h2>Contact</h2>
         <p>
           Questions about this policy? Email us at{' '}
-          <a href="mailto:irbynick2@gmail.com">irbynick2@gmail.com</a>.
+          <a href="mailto:get.garage.ai@gmail.com">get.garage.ai@gmail.com</a>.
         </p>
 
         <div className={styles.footer}>

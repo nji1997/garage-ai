@@ -107,6 +107,12 @@ export default function Dashboard() {
             />
           ))}
         </div>
+
+        <div className={styles.sidebarFooter}>
+          <a href="/privacy">Privacy</a>
+          <span>·</span>
+          <a href="/tos">Terms</a>
+        </div>
       </aside>
 
       <MobileBar

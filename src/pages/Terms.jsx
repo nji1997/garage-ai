@@ -66,7 +66,7 @@ export default function Terms() {
         <h2>Contact</h2>
         <p>
           Questions? Email us at{' '}
-          <a href="mailto:irbynick2@gmail.com">irbynick2@gmail.com</a>.
+          <a href="mailto:get.garage.ai@gmail.com">get.garage.ai@gmail.com</a>.
         </p>
 
         <div className={styles.footer}>
