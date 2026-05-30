@@ -157,6 +157,16 @@
   border-bottom: 1px solid var(--border);
   margin-bottom: 1.5rem;
   overflow-x: auto;
+  scrollbar-width: none;
+  position: sticky;
+  top: 56px;
+  background: var(--bg);
+  z-index: 10;
+}
+.tabBar::-webkit-scrollbar { display: none; }
+
+@media (max-width: 768px) {
+  .tabBar { top: 116px; } /* navbar 56px + vehicle bar 60px */
 }
 
 .tab {
