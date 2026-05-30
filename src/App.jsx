@@ -4,6 +4,8 @@ import Navbar from './components/Navbar'
 import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
 import SharedVehicle from './pages/SharedVehicle'
+import Privacy from './pages/Privacy'
+import Terms from './pages/Terms'
 import InstallBanner from './components/InstallBanner'
 
 function ProtectedRoute({ children }) {
@@ -33,6 +35,8 @@ function AppRoutes() {
         <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
         <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
         <Route path="/share/:shareId" element={<SharedVehicle />} />
+        <Route path="/privacy" element={<Privacy />} />
+        <Route path="/tos" element={<Terms />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </>

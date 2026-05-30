@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Link } from 'react-router-dom'
 import {
   signInWithPopup, createUserWithEmailAndPassword,
   signInWithEmailAndPassword, sendPasswordResetEmail
@@ -79,6 +80,11 @@ export default function Login() {
           {mode !== 'signin' && (
             <button onClick={() => { setMode('signin'); setError(''); setInfo('') }}>← Back to sign in</button>
           )}
+        </div>
+        <div className={styles.legal}>
+          <Link to="/privacy">Privacy Policy</Link>
+          <span>·</span>
+          <Link to="/tos">Terms of Service</Link>
         </div>
       </div>
     </div>

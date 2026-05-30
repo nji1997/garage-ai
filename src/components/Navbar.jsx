@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 import styles from './Navbar.module.css'
 
@@ -10,6 +11,12 @@ export default function Navbar() {
         <i className="ti ti-car" />
         <span>Garage AI</span>
       </div>
+      <div className={styles.legalLinks}>
+        <Link to="/privacy">Privacy</Link>
+        <span>·</span>
+        <Link to="/tos">Terms</Link>
+      </div>
+
       {user && (
         <div className={styles.right}>
           <div className={styles.userInfo}>

@@ -74,6 +74,18 @@
 }
 .logoutBtn:hover { background: var(--surface2); color: var(--coral); }
 
+.legalLinks {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--text3);
+}
+.legalLinks a { color: var(--text3); text-decoration: none; }
+.legalLinks a:hover { color: var(--text2); }
+.legalLinks span { color: var(--border-mid); }
+
 @media (max-width: 500px) {
   .userName { display: none; }
+  .legalLinks { display: none; }
 }
