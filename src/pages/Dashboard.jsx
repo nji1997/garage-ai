@@ -206,11 +206,8 @@ function OverviewTab({ vehicle, updateVehicle }) {
     { label: 'Maintenance', color: '#1D9E75', total: records.filter(r => !r.category || r.category === 'Maintenance').reduce((s, r) => s + (r.cost || 0), 0) },
     { label: 'Upgrade',     color: '#534AB7', total: records.filter(r => r.category === 'Upgrade').reduce((s, r) => s + (r.cost || 0), 0) },
     { label: 'Insurance',   color: '#BA7517', total: records.filter(r => r.category === 'Insurance').reduce((s, r) => s + (r.cost || 0), 0) },
-  ]
+  ].sort((a, b) => b.total - a.total)
   const maxCatSpend = Math.max(...catSpend.map(c => c.total), 1)
-
-  const [editMileage, setEditMileage] = useState(false)
-  const [mi, setMi] = useState(vehicle.mileage || 0)
 
   return (
     <div className={styles.overviewGrid}>
@@ -269,20 +266,6 @@ function OverviewTab({ vehicle, updateVehicle }) {
         </Card>
       </div>
 
-      <Card>
-        <SectionHeader title="Update mileage" />
-        {editMileage
-          ? <div style={{display:'flex',gap:8,alignItems:'center'}}>
-              <input type="number" value={mi} onChange={e => setMi(e.target.value)} style={{maxWidth:180}} />
-              <Btn variant="primary" size="sm" onClick={() => { updateVehicle(vehicle.id, { mileage: parseInt(mi)||0 }); setEditMileage(false) }}>Save</Btn>
-              <Btn size="sm" onClick={() => setEditMileage(false)}>Cancel</Btn>
-            </div>
-          : <div style={{display:'flex',gap:8,alignItems:'center'}}>
-              <span style={{fontSize:15,fontWeight:500}}>{(vehicle.mileage||0).toLocaleString()} mi</span>
-              <Btn size="sm" onClick={() => setEditMileage(true)}><i className="ti ti-edit" /> Update</Btn>
-            </div>
-        }
-      </Card>
     </div>
   )
 }
