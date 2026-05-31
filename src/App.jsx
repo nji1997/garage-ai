@@ -4,6 +4,7 @@ import Navbar from './components/Navbar'
 import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
 import SharedVehicle from './pages/SharedVehicle'
+import DemoVehicle from './pages/DemoVehicle'
 import Privacy from './pages/Privacy'
 import Terms from './pages/Terms'
 import InstallBanner from './components/InstallBanner'
@@ -34,6 +35,7 @@ function AppRoutes() {
       <Routes>
         <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
         <Route path="/" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+        <Route path="/share/demo" element={<DemoVehicle />} />
         <Route path="/share/:shareId" element={<SharedVehicle />} />
         <Route path="/privacy" element={<Privacy />} />
         <Route path="/tos" element={<Terms />} />

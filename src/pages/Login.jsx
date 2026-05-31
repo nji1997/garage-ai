@@ -86,6 +86,9 @@ export default function Login() {
           <span>·</span>
           <Link to="/tos">Terms of Service</Link>
         </div>
+        <div className={styles.demoRow}>
+          <Link to="/share/demo" className={styles.demoLink}>See a demo →</Link>
+        </div>
       </div>
     </div>
   )
