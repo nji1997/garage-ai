@@ -1,4 +1,14 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
+
+function useWindowWidth() {
+  const [width, setWidth] = useState(() => window.innerWidth)
+  useEffect(() => {
+    const handler = () => setWidth(window.innerWidth)
+    window.addEventListener('resize', handler)
+    return () => window.removeEventListener('resize', handler)
+  }, [])
+  return width
+}
 import { useAuth } from '../hooks/useAuth'
 import { useVehicles } from '../hooks/useVehicles'
 import { Btn, Card, Badge, Spinner, EmptyState, SectionHeader } from '../components/UI'
@@ -678,8 +688,17 @@ function MileageTab({ vehicle }) {
     miles: Math.max(0, p.mileage - rows[i].mileage),
   }))
 
-  // Reduce x-axis labels when many months
-  const tickInterval = rows.length > 36 ? 5 : rows.length > 18 ? 2 : 1
+  const windowWidth = useWindowWidth()
+  const isMobile = windowWidth < 600
+
+  // On mobile, show at most ~4 labels; on desktop, reduce only when many months
+  const tickInterval = isMobile
+    ? Math.max(1, Math.ceil(rows.length / 4))
+    : rows.length > 36 ? 5 : rows.length > 18 ? 2 : 1
+
+  const xAxisProps = isMobile
+    ? { tick: { fontSize: 10 }, interval: tickInterval - 1, angle: -45, textAnchor: 'end', height: 52 }
+    : { tick: { fontSize: 10 }, interval: tickInterval - 1 }
 
   const chartTooltipStyle = { fontSize: 12, borderRadius: 6, border: '1px solid var(--border)', boxShadow: 'var(--shadow)' }
 
@@ -701,10 +720,10 @@ function MileageTab({ vehicle }) {
 
       <Card>
         <SectionHeader title="Mileage over time" />
-        <ResponsiveContainer width="100%" height={220}>
-          <ComposedChart data={lineData} margin={{ top: 4, right: 8, bottom: 0, left: 0 }}>
+        <ResponsiveContainer width="100%" height={isMobile ? 250 : 220}>
+          <ComposedChart data={lineData} margin={{ top: 4, right: 8, bottom: isMobile ? 16 : 0, left: 0 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-            <XAxis dataKey="month" tick={{ fontSize: 10 }} interval={tickInterval - 1} />
+            <XAxis dataKey="month" {...xAxisProps} />
             <YAxis tick={{ fontSize: 10 }} tickFormatter={v => (v / 1000).toFixed(0) + 'k'} width={36} />
             <Tooltip contentStyle={chartTooltipStyle} formatter={(v) => v != null ? v.toLocaleString() + ' mi' : null} labelStyle={{ fontWeight: 600 }} />
             <Line
@@ -729,10 +748,10 @@ function MileageTab({ vehicle }) {
 
       <Card>
         <SectionHeader title="Miles per month" />
-        <ResponsiveContainer width="100%" height={180}>
-          <BarChart data={barData} margin={{ top: 4, right: 8, bottom: 0, left: 0 }}>
+        <ResponsiveContainer width="100%" height={isMobile ? 210 : 180}>
+          <BarChart data={barData} margin={{ top: 4, right: 8, bottom: isMobile ? 16 : 0, left: 0 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-            <XAxis dataKey="month" tick={{ fontSize: 10 }} interval={tickInterval - 1} />
+            <XAxis dataKey="month" {...xAxisProps} />
             <YAxis tick={{ fontSize: 10 }} width={36} />
             <Tooltip contentStyle={chartTooltipStyle} formatter={(v) => v.toLocaleString() + ' mi'} labelStyle={{ fontWeight: 600 }} />
             <Bar dataKey="miles" name="Miles" maxBarSize={32}>
