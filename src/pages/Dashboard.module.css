@@ -160,10 +160,16 @@
   gap: 2px;
   border-bottom: 1px solid var(--border);
   overflow-x: auto;
+  overflow-y: hidden;
   scrollbar-width: none;
   padding: 0 2rem;
   flex-shrink: 0;
   background: var(--bg);
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  touch-action: pan-x;
+  -webkit-overflow-scrolling: touch;
 }
 .tabBar::-webkit-scrollbar { display: none; }
 
