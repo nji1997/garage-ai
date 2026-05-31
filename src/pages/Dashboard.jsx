@@ -640,8 +640,8 @@ function MileageTab({ vehicle }) {
     return d.toLocaleDateString('en-US', { month: 'short', year: '2-digit' })
   }
 
-  // Line chart: one point per actual odometer reading
-  const lineData = knownPoints.map(p => ({ label: fmtDate(p.date), mileage: p.mileage }))
+  // Line chart: x-axis as ms timestamps so spacing reflects true elapsed time
+  const lineData = knownPoints.map(p => ({ ts: p.date.getTime(), mileage: p.mileage }))
 
   // Driving pace: one bar per interval between consecutive readings
   // inferred = gap > 2 months (interpolated average, not a single measured rate)
@@ -659,9 +659,17 @@ function MileageTab({ vehicle }) {
   const windowWidth = useWindowWidth()
   const isMobile = windowWidth < 600
 
-  const lineXAxisProps = isMobile
-    ? { tick: { fontSize: 10 }, interval: 0, angle: -45, textAnchor: 'end', height: 52 }
-    : { tick: { fontSize: 10 }, interval: 0 }
+  // Calendar ticks at regular monthly intervals, independent of where readings fall
+  const maxLineTicks = isMobile ? 4 : 8
+  const tc = new Date(knownPoints[0].date.getFullYear(), knownPoints[0].date.getMonth(), 1)
+  const tcEnd = new Date(last.date.getFullYear(), last.date.getMonth() + 1, 1)
+  const allMonthlyTicks = []
+  while (tc < tcEnd) {
+    allMonthlyTicks.push(tc.getTime())
+    tc.setMonth(tc.getMonth() + 1)
+  }
+  const tickStep = Math.max(1, Math.ceil(allMonthlyTicks.length / maxLineTicks))
+  const timeTicks = allMonthlyTicks.filter((_, i) => i % tickStep === 0)
 
   const paceXAxisProps = isMobile
     ? { tick: { fontSize: 10 }, interval: 0, angle: -45, textAnchor: 'end', height: 52 }
@@ -690,9 +698,25 @@ function MileageTab({ vehicle }) {
         <ResponsiveContainer width="100%" height={isMobile ? 250 : 220}>
           <ComposedChart data={lineData} margin={{ top: 4, right: 8, bottom: isMobile ? 16 : 0, left: 0 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-            <XAxis dataKey="label" {...lineXAxisProps} />
+            <XAxis
+              dataKey="ts"
+              type="number"
+              scale="time"
+              domain={['dataMin', 'dataMax']}
+              ticks={timeTicks}
+              tickFormatter={ts => new Date(ts).toLocaleDateString('en-US', { month: 'short', year: '2-digit' })}
+              tick={{ fontSize: 10 }}
+              angle={isMobile ? -45 : 0}
+              textAnchor={isMobile ? 'end' : 'middle'}
+              height={isMobile ? 52 : 30}
+            />
             <YAxis tick={{ fontSize: 10 }} tickFormatter={v => (v / 1000).toFixed(0) + 'k'} width={36} />
-            <Tooltip contentStyle={chartTooltipStyle} formatter={(v) => v != null ? v.toLocaleString() + ' mi' : null} labelStyle={{ fontWeight: 600 }} />
+            <Tooltip
+              contentStyle={chartTooltipStyle}
+              formatter={(v) => v != null ? v.toLocaleString() + ' mi' : null}
+              labelFormatter={ts => new Date(ts).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+              labelStyle={{ fontWeight: 600 }}
+            />
             <Line
               dataKey="mileage" name="Odometer reading" stroke="#534AB7" strokeWidth={2}
               dot={{ r: 5, fill: '#534AB7', stroke: '#fff', strokeWidth: 2 }}
