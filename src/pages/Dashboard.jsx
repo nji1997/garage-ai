@@ -701,8 +701,7 @@ function MileageTab({ vehicle }) {
             <XAxis
               dataKey="ts"
               type="number"
-              scale="time"
-              domain={['dataMin', 'dataMax']}
+              domain={[knownPoints[0].date.getTime(), last.date.getTime()]}
               ticks={timeTicks}
               tickFormatter={ts => new Date(ts).toLocaleDateString('en-US', { month: 'short', year: '2-digit' })}
               tick={{ fontSize: 10 }}
