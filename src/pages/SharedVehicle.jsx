@@ -3,90 +3,15 @@ import { useParams, Link } from 'react-router-dom'
 import { doc, getDoc } from 'firebase/firestore'
 import { db } from '../firebase'
 import { getVehicleSilhouette } from '../vehicle-silhouettes'
+import { useNHTSARecalls } from '../hooks/useNHTSARecalls'
+import { usePageMeta } from '../hooks/usePageMeta'
+import { getCategoryClass } from '../utils/categoryColors'
+import SharedVehicleShell, { CTABanner } from '../components/SharedVehicleShell'
 import styles from './SharedVehicle.module.css'
-
-function usePageMeta(title, description) {
-  useEffect(() => {
-    if (!title) return
-    const prev = document.title
-    document.title = title
-
-    const tags = []
-    function set(attr, key, val) {
-      let el = document.querySelector(`meta[${attr}="${key}"]`)
-      let created = false
-      if (!el) { el = document.createElement('meta'); el.setAttribute(attr, key); document.head.appendChild(el); created = true }
-      el.setAttribute('content', val)
-      if (created) tags.push(el)
-    }
-    set('property', 'og:title', title)
-    set('property', 'og:description', description)
-    set('property', 'og:type', 'website')
-    set('name', 'twitter:card', 'summary')
-    set('name', 'twitter:title', title)
-    set('name', 'twitter:description', description)
-
-    return () => { document.title = prev; tags.forEach(el => el.remove()) }
-  }, [title, description])
-}
 
 function fmtMonth(dateStr) {
   if (!dateStr) return null
   return new Date(dateStr + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
-}
-
-function normalizeRecallLookup(make, model) {
-  const mk = (make || '').toUpperCase()
-  const md = (model || '').toUpperCase()
-  if (mk === 'BMW') {
-    const map = { '3 SERIES': '330I', '4 SERIES': '430I', '5 SERIES': '530I', '6 SERIES': '640I', '7 SERIES': '740I', '8 SERIES': '840I', '2 SERIES': '230I' }
-    if (map[md]) return { make, model: map[md] }
-  }
-  if (mk === 'MERCEDES-BENZ') {
-    const map = { 'C-CLASS': 'C300', 'E-CLASS': 'E350', 'S-CLASS': 'S500', 'GLC': 'GLC300', 'GLE': 'GLE350', 'GLS': 'GLS450', 'CLA': 'CLA250', 'GLA': 'GLA250', 'GLB': 'GLB250' }
-    if (map[md]) return { make, model: map[md] }
-  }
-  if (mk === 'FORD') {
-    const map = { 'F-250SD': 'F-250 SD', 'F-350SD': 'F-350 SD', 'F-450SD': 'F-450 SD', 'F-550SD': 'F-550 SD' }
-    if (map[md]) return { make, model: map[md] }
-  }
-  return { make, model }
-}
-
-function RecallStatus({ make, model, year }) {
-  const [count, setCount] = useState(null)
-
-  useEffect(() => {
-    const { make: nMake, model: nModel } = normalizeRecallLookup(make, model)
-    const url = `https://api.nhtsa.gov/recalls/recallsByVehicle?make=${encodeURIComponent(nMake)}&model=${encodeURIComponent(nModel)}&modelYear=${encodeURIComponent(year)}`
-    fetch(url)
-      .then(res => {
-        if (res.status === 400) { setCount(0); return null }
-        if (!res.ok) { setCount(-1); return null }
-        return res.json()
-      })
-      .then(data => { if (data) setCount(data.results?.length || 0) })
-      .catch(() => setCount(-1))
-  }, [make, model, year])
-
-  if (count === null || count === -1) return null
-
-  return (
-    <section className={styles.section}>
-      <h2 className={styles.sectionHeading}>Recall Status</h2>
-      {count === 0 ? (
-        <div className={styles.recallGood}>
-          <span className={styles.recallIcon}>✓</span>
-          No open recalls on file for this vehicle
-        </div>
-      ) : (
-        <div className={styles.recallWarn}>
-          <span className={styles.recallIcon}>⚠</span>
-          {count} open recall{count !== 1 ? 's' : ''} — contact your dealer
-        </div>
-      )}
-    </section>
-  )
 }
 
 export default function SharedVehicle() {
@@ -114,16 +39,20 @@ export default function SharedVehicle() {
     vehicleName ? `Verified service history for this ${vehicleName} — tracked on Garage AI.` : ''
   )
 
+  const { count: recallCount, loading: recallLoading } = useNHTSARecalls(
+    vehicle?.year, vehicle?.make, vehicle?.model
+  )
+
   if (loading) return (
     <div className={styles.fullCenter}>
-      <div className={styles.spinner} />
+      <div className={styles.spinner} aria-label="Loading vehicle data" />
     </div>
   )
 
   if (error) return (
     <div className={styles.fullCenter}>
       <div className={styles.errorBox}>
-        <div className={styles.errorEmoji}>🚗</div>
+        <div className={styles.errorEmoji} aria-hidden="true">🚗</div>
         <p>{error}</p>
         <Link to="/" className={styles.errorCta}>Open Garage AI</Link>
       </div>
@@ -158,80 +87,84 @@ export default function SharedVehicle() {
   })()
 
   return (
-    <div className={styles.page}>
-      <nav className={styles.nav}>
-        <Link to="/" className={styles.navLogo}>
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M5 17H3a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h14l4 4v4a2 2 0 0 1-2 2h-2"/>
-            <circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/>
-          </svg>
-          Garage AI
-        </Link>
-        <span className={styles.trackedBadge}>Tracked with Garage AI</span>
-      </nav>
+    <SharedVehicleShell>
 
-      <div className={styles.container}>
-        {/* Vehicle header */}
-        <div className={styles.hero}>
-          <div
-            className={styles.silhouette}
-            dangerouslySetInnerHTML={{ __html: getVehicleSilhouette(vehicle.bodyClass) }}
-          />
-          <h1 className={styles.vehicleName}>
-            {vehicle.year} {vehicle.make} {vehicle.model}
-            {vehicle.trim && <span className={styles.vehicleTrim}> {vehicle.trim}</span>}
-          </h1>
-          {(vehicle.engine || vehicle.transmission) && (
-            <p className={styles.vehicleSub}>
-              {[vehicle.engine, vehicle.transmission, vehicle.color].filter(Boolean).join(' · ')}
-            </p>
-          )}
-        </div>
-
-        {/* CTA — second thing a viewer sees */}
-        <div className={styles.ctaBanner}>
-          <p className={styles.ctaBannerText}>Know your car better than anyone.</p>
-          <Link to="/" className={styles.ctaBannerBtn}>Start tracking free →</Link>
-        </div>
-
-        {/* Stats */}
-        {stats.length > 0 && (
-          <div className={styles.statsGrid}>
-            {stats.map(s => (
-              <div key={s.label} className={styles.statCard}>
-                <div className={styles.statValue}>{s.value}</div>
-                <div className={styles.statLabel}>{s.label}</div>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* Service summary — no line items */}
-        {records.length > 0 && (
-          <section className={styles.section}>
-            <h2 className={styles.sectionHeading}>Service History</h2>
-            <div className={styles.summaryCount}>
-              {records.length} service{records.length !== 1 ? 's' : ''} recorded
-            </div>
-            {dateRange && (
-              <div className={styles.summaryRange}>{dateRange}</div>
-            )}
-            {categories.length > 0 && (
-              <div className={styles.categoryRow}>
-                {categories.map(cat => (
-                  <span key={cat} className={`${styles.categoryPill} ${styles['cat' + cat]}`}>{cat}</span>
-                ))}
-              </div>
-            )}
-            <p className={styles.privateNote}>Full records available to owner</p>
-          </section>
-        )}
-
-        {/* Recall status */}
-        {vehicle.make && vehicle.model && vehicle.year && (
-          <RecallStatus make={vehicle.make} model={vehicle.model} year={vehicle.year} />
+      {/* ── Vehicle header ── */}
+      <div className={styles.hero}>
+        <div
+          className={styles.silhouette}
+          aria-hidden="true"
+          dangerouslySetInnerHTML={{ __html: getVehicleSilhouette(vehicle.bodyClass) }}
+        />
+        <h1 className={styles.vehicleName}>
+          {vehicle.year} {vehicle.make} {vehicle.model}
+          {vehicle.trim && <span className={styles.vehicleTrim}> {vehicle.trim}</span>}
+        </h1>
+        {(vehicle.engine || vehicle.transmission) && (
+          <p className={styles.vehicleSub}>
+            {[vehicle.engine, vehicle.transmission, vehicle.color].filter(Boolean).join(' · ')}
+          </p>
         )}
       </div>
-    </div>
+
+      {/* ── CTA after hero, before stats ── */}
+      <CTABanner />
+
+      {/* ── Stats ── */}
+      {stats.length > 0 && (
+        <div className={styles.statsGrid}>
+          {stats.map(s => (
+            <div key={s.label} className={styles.statCard}>
+              <div className={styles.statValue}>{s.value}</div>
+              <div className={styles.statLabel}>{s.label}</div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* ── Service summary — line items private ── */}
+      {records.length > 0 && (
+        <section className={styles.section}>
+          <h2 className={styles.sectionHeading}>Service History</h2>
+          <div className={styles.summaryCount}>
+            {records.length} service{records.length !== 1 ? 's' : ''} recorded
+          </div>
+          {dateRange && (
+            <div className={styles.summaryRange}>{dateRange}</div>
+          )}
+          {categories.length > 0 && (
+            <div className={styles.categoryRow}>
+              {categories.map(cat => (
+                <span key={cat} className={`${styles.categoryPill} ${styles[getCategoryClass(cat)]}`}>{cat}</span>
+              ))}
+            </div>
+          )}
+          <p className={styles.ownerNote}>
+            Owner-submitted records · Full details available to owner only
+          </p>
+        </section>
+      )}
+
+      {/* ── Recall status ── */}
+      {vehicle.make && vehicle.model && vehicle.year && (
+        <section className={styles.section} aria-live="polite" aria-atomic="true">
+          <h2 className={styles.sectionHeading}>Recall Status</h2>
+          {recallLoading || recallCount === null ? (
+            <p className={styles.recallLoading}>Checking recall database…</p>
+          ) : recallCount === 0 ? (
+            <div className={styles.recallGood}>
+              <span className={styles.recallIcon} aria-hidden="true">✓</span>
+              No open recalls on file for this vehicle
+            </div>
+          ) : (
+            <div className={styles.recallWarn}>
+              <span className={styles.recallIcon} aria-hidden="true">⚠</span>
+              {recallCount} open recall{recallCount !== 1 ? 's' : ''} — contact your dealer
+            </div>
+          )}
+        </section>
+      )}
+
+    </SharedVehicleShell>
   )
 }

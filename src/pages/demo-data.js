@@ -1,3 +1,8 @@
+// IMPORTANT: Keep all dates in the past and mileage values increasing chronologically.
+// Dates must not be in the future. Mileage at each record must be >= the previous record's
+// mileage. This data is displayed on a public demo page and future dates or inconsistent
+// mileage immediately undermine credibility.
+
 export const demoVehicle = {
   year: '2022',
   make: 'Toyota',
@@ -7,6 +12,9 @@ export const demoVehicle = {
   transmission: 'Automatic',
   bodyClass: 'sedan',
   mileage: 38000,
+  // Fictional but structurally valid VIN for demo purposes.
+  // Real shared pages display the owner's actual VIN.
+  vin: '4T1BF1FK8NU123456',
 }
 
 export const demoRecords = [
@@ -113,7 +121,7 @@ export const demoRecords = [
     id: 'r12',
     title: 'Synthetic Oil Change',
     shop: 'Jiffy Lube',
-    date: '2026-02-08',
+    date: '2025-10-12',
     category: 'Maintenance',
     mileage: 38000,
     cost: 84.99,

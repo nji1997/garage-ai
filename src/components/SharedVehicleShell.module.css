@@ -1,0 +1,55 @@
+.page {
+  min-height: 100vh;
+  background: #f8fafc;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  color: #0f172a;
+}
+
+.container {
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 48px 24px 80px;
+}
+
+/* ── CTA Banner ── */
+.ctaBanner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  background: linear-gradient(135deg, #ede9fe 0%, #f5f3ff 100%);
+  border: 1px solid #c4b5fd;
+  border-radius: 14px;
+  padding: 18px 22px;
+  margin-bottom: 28px;
+}
+
+.ctaBannerText {
+  font-size: 15px;
+  font-weight: 600;
+  color: #2e1065;
+  flex: 1;
+  line-height: 1.4;
+  margin: 0;
+}
+
+.ctaBannerBtn {
+  display: inline-block;
+  background: #6366f1;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 10px 18px;
+  border-radius: 10px;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background 0.15s;
+}
+
+.ctaBannerBtn:hover { background: #4f46e5; text-decoration: none; }
+
+@media (max-width: 560px) {
+  .container { padding: 28px 16px 64px; }
+  .ctaBanner { flex-direction: column; align-items: flex-start; gap: 12px; }
+  .ctaBannerBtn { width: 100%; text-align: center; }
+}

@@ -1,51 +1,5 @@
-.page {
-  min-height: 100vh;
-  background: #f8fafc;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  color: #0f172a;
-}
-
-/* ── Nav ── */
-.nav {
-  position: sticky;
-  top: 0;
-  z-index: 20;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 14px 24px;
-  background: rgba(255,255,255,0.9);
-  backdrop-filter: blur(8px);
-  border-bottom: 1px solid #e2e8f0;
-}
-
-.navLogo {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  font-size: 15px;
-  font-weight: 700;
-  color: #0f172a;
-  text-decoration: none;
-  letter-spacing: -0.2px;
-}
-
-.trackedBadge {
-  font-size: 11px;
-  font-weight: 500;
-  color: #64748b;
-  background: #f1f5f9;
-  border: 1px solid #e2e8f0;
-  padding: 4px 12px;
-  border-radius: 99px;
-}
-
-/* ── Container ── */
-.container {
-  max-width: 680px;
-  margin: 0 auto;
-  padding: 48px 24px 80px;
-}
+/* Shell owns: .page, .container, .ctaBanner* — see SharedVehicleShell.module.css  */
+/* ShareNav owns: .nav, .navLogo, .trackedBadge — see ShareNav.module.css           */
 
 /* ── Hero ── */
 .hero { margin-bottom: 24px; }
@@ -76,42 +30,6 @@
   color: #64748b;
   margin: 0;
 }
-
-/* ── CTA Banner ── */
-.ctaBanner {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  background: linear-gradient(135deg, #ede9fe 0%, #f5f3ff 100%);
-  border: 1px solid #c4b5fd;
-  border-radius: 14px;
-  padding: 18px 22px;
-  margin-bottom: 28px;
-}
-
-.ctaBannerText {
-  font-size: 15px;
-  font-weight: 600;
-  color: #2e1065;
-  flex: 1;
-  line-height: 1.4;
-  margin: 0;
-}
-
-.ctaBannerBtn {
-  display: inline-block;
-  background: #6366f1;
-  color: #fff;
-  font-size: 13px;
-  font-weight: 700;
-  padding: 10px 18px;
-  border-radius: 10px;
-  text-decoration: none;
-  white-space: nowrap;
-  transition: background 0.15s;
-}
-.ctaBannerBtn:hover { background: #4f46e5; text-decoration: none; }
 
 /* ── Stats ── */
 .statsGrid {
@@ -198,10 +116,10 @@
 
 .catMaintenance { background: #dcfce7; color: #166534; border-color: #86efac; }
 .catUpgrade     { background: #ede9fe; color: #5b21b6; border-color: #c4b5fd; }
-.catInsurance   { background: #fef3c7; color: #92400e; border-color: #fde68a; }
+.catInsurance   { background: #dbeafe; color: #1e40af; border-color: #93c5fd; }
 .catRepair      { background: #ffedd5; color: #9a3412; border-color: #fdba74; }
 
-.privateNote {
+.ownerNote {
   font-size: 12px;
   color: #94a3b8;
   border-top: 1px solid #f1f5f9;
@@ -210,6 +128,12 @@
 }
 
 /* ── Recall status ── */
+.recallLoading {
+  font-size: 14px;
+  color: #94a3b8;
+  margin: 0;
+}
+
 .recallGood {
   display: flex;
   align-items: center;
@@ -230,7 +154,7 @@
 
 .recallIcon { font-size: 18px; flex-shrink: 0; }
 
-/* ── Loading / Error ── */
+/* ── Loading / Error states ── */
 .fullCenter {
   display: flex;
   align-items: center;
@@ -272,11 +196,8 @@
 
 /* ── Responsive ── */
 @media (max-width: 560px) {
-  .container { padding: 28px 16px 64px; }
   .vehicleName { font-size: 26px; }
-  .ctaBanner { flex-direction: column; align-items: flex-start; gap: 12px; }
-  .ctaBannerBtn { width: 100%; text-align: center; }
-  .section { padding: 20px 16px; }
   .silhouette { height: 160px; }
+  .section { padding: 20px 16px; }
   .summaryCount { font-size: 22px; }
 }
