@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from 'react'
+import { useState, useRef, useEffect } from 'react'
 
 function useWindowWidth() {
   const [width, setWidth] = useState(() => window.innerWidth)
@@ -606,48 +606,6 @@ function CostsTab({ vehicle }) {
 }
 
 /* ── MILEAGE TAB ──────────────────────────────────────────── */
-function buildMileageData(knownPoints) {
-  const today = new Date()
-  const last = knownPoints[knownPoints.length - 1]
-  const secondLast = knownPoints[knownPoints.length - 2]
-  const extrapolationRatePerDay = (last.mileage - secondLast.mileage) /
-    Math.max(1, (last.date - secondLast.date) / 86400000)
-
-  function mileageAt(date) {
-    if (date <= knownPoints[0].date) return knownPoints[0].mileage
-    if (date >= last.date) {
-      return Math.round(last.mileage + extrapolationRatePerDay * (date - last.date) / 86400000)
-    }
-    for (let i = 0; i < knownPoints.length - 1; i++) {
-      if (date >= knownPoints[i].date && date <= knownPoints[i + 1].date) {
-        const t = (date - knownPoints[i].date) / (knownPoints[i + 1].date - knownPoints[i].date)
-        return Math.round(knownPoints[i].mileage + t * (knownPoints[i + 1].mileage - knownPoints[i].mileage))
-      }
-    }
-    return last.mileage
-  }
-
-  const rows = []
-  const cursor = new Date(knownPoints[0].date.getFullYear(), knownPoints[0].date.getMonth(), 1)
-  const endMonth = new Date(today.getFullYear(), today.getMonth() + 1, 1)
-
-  while (cursor < endMonth) {
-    const mid = new Date(cursor.getFullYear(), cursor.getMonth(), 15)
-    const estimated = mid > last.date
-    const known = knownPoints.some(p =>
-      p.date.getFullYear() === cursor.getFullYear() && p.date.getMonth() === cursor.getMonth()
-    )
-    rows.push({
-      month: cursor.toLocaleDateString('en-US', { month: 'short', year: '2-digit' }),
-      mileage: mileageAt(mid),
-      estimated,
-      known,
-    })
-    cursor.setMonth(cursor.getMonth() + 1)
-  }
-  return { rows, mileageAt }
-}
-
 function MileageTab({ vehicle }) {
   const records = vehicle.records || []
   const knownPoints = records
@@ -665,40 +623,49 @@ function MileageTab({ vehicle }) {
     )
   }
 
-  const { rows, mileageAt } = buildMileageData(knownPoints)
+  // Extrapolate current mileage (stat cards only — not charted)
   const today = new Date()
-  const currentMileage = mileageAt(today)
+  const last = knownPoints[knownPoints.length - 1]
+  const secondLast = knownPoints[knownPoints.length - 2]
+  const ratePerDay = (last.mileage - secondLast.mileage) /
+    Math.max(1, (last.date - secondLast.date) / 86400000)
+  const currentMileage = Math.round(last.mileage + ratePerDay * Math.max(0, (today - last.date) / 86400000))
   const firstMileage = knownPoints[0].mileage
   const totalMiles = currentMileage - firstMileage
   const totalMonths = Math.max(1, (today - knownPoints[0].date) / (86400000 * 30.44))
   const avgPerMonth = Math.round(totalMiles / totalMonths)
   const avgPerYear = Math.round(avgPerMonth * 12)
 
-  // Last known month index (for solid/dashed split)
-  const lastKnownIdx = rows.reduce((li, p, i) => p.known ? i : li, 0)
-  const lineData = rows.map((p, i) => ({
-    ...p,
-    solidMileage: i <= lastKnownIdx ? p.mileage : null,
-    dashedMileage: i >= lastKnownIdx ? p.mileage : null,
-  }))
+  function fmtDate(d) {
+    return d.toLocaleDateString('en-US', { month: 'short', year: '2-digit' })
+  }
 
-  // Miles per month bar data
-  const barData = rows.slice(1).map((p, i) => ({
-    ...p,
-    miles: Math.max(0, p.mileage - rows[i].mileage),
-  }))
+  // Line chart: one point per actual odometer reading
+  const lineData = knownPoints.map(p => ({ label: fmtDate(p.date), mileage: p.mileage }))
+
+  // Driving pace: one bar per interval between consecutive readings
+  // inferred = gap > 2 months (interpolated average, not a single measured rate)
+  const paceData = knownPoints.slice(1).map((p, i) => {
+    const prev = knownPoints[i]
+    const monthsBetween = (p.date - prev.date) / (86400000 * 30.44)
+    const milesPerMonth = Math.round((p.mileage - prev.mileage) / Math.max(0.5, monthsBetween))
+    return {
+      label: `${fmtDate(prev.date)}–${fmtDate(p.date)}`,
+      milesPerMonth,
+      inferred: monthsBetween > 2,
+    }
+  })
 
   const windowWidth = useWindowWidth()
   const isMobile = windowWidth < 600
 
-  // On mobile, show at most ~4 labels; on desktop, reduce only when many months
-  const tickInterval = isMobile
-    ? Math.max(1, Math.ceil(rows.length / 4))
-    : rows.length > 36 ? 5 : rows.length > 18 ? 2 : 1
+  const lineXAxisProps = isMobile
+    ? { tick: { fontSize: 10 }, interval: 0, angle: -45, textAnchor: 'end', height: 52 }
+    : { tick: { fontSize: 10 }, interval: 0 }
 
-  const xAxisProps = isMobile
-    ? { tick: { fontSize: 10 }, interval: tickInterval - 1, angle: -45, textAnchor: 'end', height: 52 }
-    : { tick: { fontSize: 10 }, interval: tickInterval - 1 }
+  const paceXAxisProps = isMobile
+    ? { tick: { fontSize: 10 }, interval: 0, angle: -45, textAnchor: 'end', height: 52 }
+    : { tick: { fontSize: 11 }, interval: 0 }
 
   const chartTooltipStyle = { fontSize: 12, borderRadius: 6, border: '1px solid var(--border)', boxShadow: 'var(--shadow)' }
 
@@ -723,47 +690,43 @@ function MileageTab({ vehicle }) {
         <ResponsiveContainer width="100%" height={isMobile ? 250 : 220}>
           <ComposedChart data={lineData} margin={{ top: 4, right: 8, bottom: isMobile ? 16 : 0, left: 0 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-            <XAxis dataKey="month" {...xAxisProps} />
+            <XAxis dataKey="label" {...lineXAxisProps} />
             <YAxis tick={{ fontSize: 10 }} tickFormatter={v => (v / 1000).toFixed(0) + 'k'} width={36} />
             <Tooltip contentStyle={chartTooltipStyle} formatter={(v) => v != null ? v.toLocaleString() + ' mi' : null} labelStyle={{ fontWeight: 600 }} />
             <Line
-              dataKey="solidMileage" name="Recorded" stroke="#534AB7" strokeWidth={2}
-              connectNulls dot={(props) => {
-                if (!props.payload.known) return <g key={props.index} />
-                return <circle key={props.index} cx={props.cx} cy={props.cy} r={5} fill="#534AB7" stroke="#fff" strokeWidth={2} />
-              }}
-            />
-            <Line
-              dataKey="dashedMileage" name="Estimated" stroke="#534AB7" strokeWidth={2}
-              strokeDasharray="6 4" opacity={0.45} dot={false} connectNulls
+              dataKey="mileage" name="Odometer reading" stroke="#534AB7" strokeWidth={2}
+              dot={{ r: 5, fill: '#534AB7', stroke: '#fff', strokeWidth: 2 }}
+              activeDot={{ r: 6 }}
             />
           </ComposedChart>
         </ResponsiveContainer>
         <div className={styles.chartLegend}>
-          <span><span className={styles.legendDot} />Known data point</span>
-          <span><span className={styles.legendLine} />Recorded</span>
-          <span><span className={styles.legendDashed} />Estimated</span>
+          <span><span className={styles.legendDot} />Odometer reading</span>
         </div>
       </Card>
 
       <Card>
-        <SectionHeader title="Miles per month" />
+        <SectionHeader title="Driving pace" />
         <ResponsiveContainer width="100%" height={isMobile ? 210 : 180}>
-          <BarChart data={barData} margin={{ top: 4, right: 8, bottom: isMobile ? 16 : 0, left: 0 }}>
+          <BarChart data={paceData} margin={{ top: 4, right: 8, bottom: isMobile ? 16 : 0, left: 0 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-            <XAxis dataKey="month" {...xAxisProps} />
+            <XAxis dataKey="label" {...paceXAxisProps} />
             <YAxis tick={{ fontSize: 10 }} width={36} />
-            <Tooltip contentStyle={chartTooltipStyle} formatter={(v) => v.toLocaleString() + ' mi'} labelStyle={{ fontWeight: 600 }} />
-            <Bar dataKey="miles" name="Miles" maxBarSize={32}>
-              {barData.map((entry, i) => (
-                <Cell key={i} fill={entry.estimated ? '#B3B0E8' : '#534AB7'} />
+            <Tooltip
+              contentStyle={chartTooltipStyle}
+              formatter={(v, _name, props) => [`${v.toLocaleString()} mi/mo`, props.payload.inferred ? 'Inferred avg' : 'Avg']}
+              labelStyle={{ fontWeight: 600 }}
+            />
+            <Bar dataKey="milesPerMonth" maxBarSize={48}>
+              {paceData.map((entry, i) => (
+                <Cell key={i} fill={entry.inferred ? '#B3B0E8' : '#534AB7'} />
               ))}
             </Bar>
           </BarChart>
         </ResponsiveContainer>
         <div className={styles.chartLegend}>
-          <span><span className={styles.legendBar} style={{ background: '#534AB7' }} />Recorded</span>
-          <span><span className={styles.legendBar} style={{ background: '#B3B0E8' }} />Estimated</span>
+          <span><span className={styles.legendBar} style={{ background: '#534AB7' }} />Measured pace</span>
+          <span><span className={styles.legendBar} style={{ background: '#B3B0E8' }} />Inferred average</span>
         </div>
       </Card>
     </div>
