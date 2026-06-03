@@ -6,6 +6,10 @@ import { SpeedInsights } from '@vercel/speed-insights/react'
 import App from './App.jsx'
 import './index.css'
 
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js')
+}
+
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <BrowserRouter>
